@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+dist/
+build/
+uv.lock
+node_modules/
+.DS_Store
+.idea/
+.vscode/
+# scratch data written by `rankscope synth` and by the examples
+/data/
