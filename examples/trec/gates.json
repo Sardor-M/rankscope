@@ -1,0 +1,6 @@
+{
+  "rules": [
+    {"name": "dense finds the hard queries in its top 5", "path": "metrics.dense.doc.hard.hit@5", "op": ">=", "threshold": 0.5},
+    {"name": "fusion keeps hit@5 over everything", "path": "metrics.rrf.doc.all.hit@5", "op": ">=", "threshold": 0.5}
+  ]
+}

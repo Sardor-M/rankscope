@@ -1,0 +1,7 @@
+# qid 0 docid grade. A query whose grades are all 0 is judged to have no answer in the corpus.
+q1 0 acme-manual#p12 2
+q1 0 acme-manual#p13 1
+q2 0 bolt-catalog#p3 2
+q3 0 acme-manual#p40 1
+q4 0 press-guide#p7 2
+n1 0 acme-manual#p12 0

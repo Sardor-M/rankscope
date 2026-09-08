@@ -1,0 +1,13 @@
+acme-manual#p02
+acme-manual#p12
+acme-manual#p13
+acme-manual#p40
+acme-manual#p41
+bolt-catalog#p1
+bolt-catalog#p3
+bolt-catalog#p4
+bolt-catalog#p9
+press-guide#p1
+press-guide#p2
+press-guide#p7
+press-guide#p8

@@ -1,0 +1,14 @@
+q1 Q0 acme-manual#p13 1 0.81 dense
+q1 Q0 acme-manual#p12 2 0.79 dense
+q1 Q0 press-guide#p1 3 0.55 dense
+q2 Q0 bolt-catalog#p4 1 0.66 dense
+q2 Q0 bolt-catalog#p9 2 0.60 dense
+q2 Q0 acme-manual#p02 3 0.52 dense
+q3 Q0 acme-manual#p40 1 0.74 dense
+q3 Q0 acme-manual#p41 2 0.70 dense
+q3 Q0 press-guide#p2 3 0.51 dense
+q4 Q0 press-guide#p8 1 0.69 dense
+q4 Q0 press-guide#p1 2 0.63 dense
+q4 Q0 bolt-catalog#p1 3 0.50 dense
+n1 Q0 acme-manual#p41 1 0.71 dense
+n1 Q0 press-guide#p8 2 0.64 dense

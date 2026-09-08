@@ -1,0 +1,16 @@
+q1 Q0 acme-manual#p12 1 12.1 bm25
+q1 Q0 acme-manual#p02 2 9.4 bm25
+q1 Q0 press-guide#p1 3 4.2 bm25
+q2 Q0 bolt-catalog#p3 1 15.0 bm25
+q2 Q0 bolt-catalog#p4 2 14.1 bm25
+q2 Q0 bolt-catalog#p9 3 6.0 bm25
+q3 Q0 press-guide#p2 1 5.5 bm25
+q3 Q0 bolt-catalog#p1 2 3.0 bm25
+q4 Q0 press-guide#p8 1 8.8 bm25
+q4 Q0 press-guide#p1 2 8.1 bm25
+q4 Q0 press-guide#p2 3 7.7 bm25
+q4 Q0 acme-manual#p02 4 4.0 bm25
+q4 Q0 bolt-catalog#p1 5 3.9 bm25
+q4 Q0 press-guide#p7 6 3.2 bm25
+n1 Q0 acme-manual#p02 1 7.7 bm25
+n1 Q0 acme-manual#p12 2 6.1 bm25
