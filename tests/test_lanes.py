@@ -58,3 +58,14 @@ def test_mapping_and_ids(tmp_path):
     assert read_mapping(tmp_path / "m.json") == {"d1": "G1"}
     (tmp_path / "ids.txt").write_text("a\n\nb\n# x\n")
     assert read_ids(tmp_path / "ids.txt") == {"a", "b"}
+
+
+def test_truncate_cuts_every_lane_to_the_same_depth():
+    from rankscope.lanes import truncate
+
+    lanes = {"a": Lane("a", {"q1": [Hit("d1", 3.0), Hit("d2", 2.0), Hit("d3", 1.0)]}), "b": Lane("b", {"q1": [Hit("x", 1.0)]})}
+    cut = truncate(lanes, 2)
+    assert [h.doc for h in cut["a"].hits["q1"]] == ["d1", "d2"] and cut["b"].depth() == 1
+    assert lanes["a"].depth() == 3
+    with pytest.raises(ValueError):
+        truncate(lanes, 0)

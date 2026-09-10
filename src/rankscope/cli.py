@@ -11,7 +11,7 @@ from .calibrate import calibrate
 from .fusion import parse_weights
 from .gate import Gate
 from .jsonio import dump, dumps, load
-from .lanes import Lane, load_lanes, read_ids, read_mapping, read_qrels, write_lane
+from .lanes import Lane, load_lanes, read_ids, read_mapping, read_qrels, truncate, write_lane
 from .measure import CONVEX, RRF, evaluate, per_query_metrics, rankings_for
 from .ranks import group_by_mapping, group_by_separator
 from .report import query_lines, render, render_calibration, render_compare, render_verdict
@@ -26,6 +26,8 @@ def _ks(text: str) -> tuple[int, ...]:
 def _inputs(args):
     """Lanes, qrels (with strata and extra negatives applied) and the group function."""
     lanes = load_lanes(args.lane)
+    if getattr(args, "depth", None):
+        lanes = truncate(lanes, args.depth)
     qrels = read_qrels(args.qrels)
     if getattr(args, "strata", None):
         qrels = qrels.with_strata(read_mapping(args.strata))
@@ -168,7 +170,7 @@ def cmd_goldens(args) -> int:
     return 0
 
 
-def _add_inputs(parser: argparse.ArgumentParser, *, qrels: bool = True) -> None:
+def _add_inputs(parser: argparse.ArgumentParser, *, qrels: bool = True, depth: bool = True) -> None:
     parser.add_argument("--lane", action="append", required=True, metavar="[NAME=]PATH",
                         help="a TREC run file or JSONL lane; repeatable, order kept")
     if qrels:
@@ -178,6 +180,8 @@ def _add_inputs(parser: argparse.ArgumentParser, *, qrels: bool = True) -> None:
         parser.add_argument("--group-sep", help="doc ids are GROUP<sep>REST; enables group-level metrics")
         parser.add_argument("--groups", help="doc<TAB>group mapping file; enables group-level metrics")
     parser.add_argument("--rrf-k", type=int, default=60)
+    if depth:
+        parser.add_argument("--depth", type=int, help="cut every lane to this depth before anything is computed")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -239,9 +243,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_verdict)
 
     p = sub.add_parser("fuse", help="write a fused TREC run from several lanes")
-    _add_inputs(p, qrels=False)
+    _add_inputs(p, qrels=False, depth=False)
     p.add_argument("--weights", help="name=w,... or a thresholds JSON; without it, rrf")
-    p.add_argument("--depth", type=int, default=100)
+    p.add_argument("--depth", type=int, default=100, help="depth of the fused run written")
     p.add_argument("--out", required=True)
     p.set_defaults(func=cmd_fuse)
 

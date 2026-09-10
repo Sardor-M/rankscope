@@ -92,3 +92,17 @@ def test_goldens_self_check_and_js_reference(tmp_path):
     assert node.returncode == 0, node.stdout + node.stderr
     emitted = subprocess.run(["node", "reference/js/check.mjs", str(path), "--emit"], capture_output=True, text=True).stdout
     assert goldens.check(emitted) == []
+
+
+def test_depth_missing_lanes_and_conservative_floor(synth_dir, tmp_path, capsys):
+    lanes = [f"--lane={synth_dir / 'lanes' / 'lexical.run'}", f"--lane={synth_dir / 'lanes' / 'dense.run'}"]
+    assert cli.main(["evaluate", *lanes, "--qrels", str(synth_dir / "qrels.txt"), "--depth", "5", "--format", "json"]) == 0
+    meta = json.loads(capsys.readouterr().out)["meta"]
+    assert meta["depths"] == {"lexical": 5, "dense": 5} and meta["missing_from_lane"] == {"lexical": 0, "dense": 0}
+
+    partial = tmp_path / "partial.jsonl"
+    partial.write_text('{"query": "q000", "hits": [{"doc": "D01#001", "score": 0.9}]}\n')
+    assert cli.main(["evaluate", f"--lane={synth_dir / 'lanes' / 'dense.run'}", f"--lane=partial={partial}",
+                     "--qrels", str(synth_dir / "qrels.txt"), "--quiet"]) == 0
+    out = capsys.readouterr().out
+    assert "missing from a lane" in out and "partial 89" in out and "lanes differ in depth" in out

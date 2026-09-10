@@ -93,5 +93,10 @@ def calibrate(
             {"name": f"conformal-{alpha:g}", "floor": conformal["floor"]},
             {"name": f"fpir-{fpir:g}", "floor": operating["floor"]},
         ],
-        "n": {"positives": len(positives), "negatives": len(negatives), "null_scores": len(null_scores)},
+        "n": {
+            "positives": len(positives), "negatives": len(negatives), "null_scores": len(null_scores),
+            "missing_from_lane": {
+                name: sum(1 for judgment in qrels if judgment.query not in lane.hits) for name, lane in lanes.items()
+            },
+        },
     }

@@ -149,5 +149,13 @@ def read_ids(path: str | Path) -> set[str]:
             if line.strip() and not line.startswith("#")}
 
 
+def truncate(lanes: Mapping[str, Lane], depth: int) -> dict[str, Lane]:
+    """Every lane cut to the same depth, so fusion and floors see comparable lists."""
+    if depth <= 0:
+        raise ValueError("depth must be positive")
+    return {name: Lane(lane.name, {query: hits[:depth] for query, hits in lane.hits.items()})
+            for name, lane in lanes.items()}
+
+
 def slice_lanes(lanes: Mapping[str, Lane], query: str) -> dict[str, list[Hit]]:
     return {name: list(lane.hits.get(query, [])) for name, lane in lanes.items()}

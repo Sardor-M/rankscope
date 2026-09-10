@@ -134,6 +134,10 @@ def evaluate(
             "rrf_k": rrf_k,
             "weights": dict(weights or {}),
             "blind": blind,
+            "depths": {name: lane.depth() for name, lane in lanes.items()},
+            "missing_from_lane": {
+                name: sum(1 for judgment in qrels if judgment.query not in lane.hits) for name, lane in lanes.items()
+            },
             "n": {
                 "queries": len(qrels), "positives": positives, "negatives": negatives,
                 "indexed": n_indexed, "unjudged_in_lanes": len(unjudged),

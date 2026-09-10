@@ -114,6 +114,9 @@ and reported on the same queries is optimism, not measurement.
   explicit mapping instead.
 - **Corpus** (optional): one indexed id per line, so a relevant document that was never
   indexed is reported as a coverage miss rather than a retrieval miss.
+- **Depth** (optional): `--depth N` cuts every lane to the same depth before fusion and
+  floors. The report prints each lane's depth, warns when they differ, and counts judged
+  queries missing from any lane.
 
 The full specification, including the report JSON, is in [`docs/formats.md`](docs/formats.md).
 

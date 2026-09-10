@@ -75,6 +75,16 @@ def render(report: Mapping, *, ci_k: int | None = None, markdown: bool = False) 
         + (f" · {n['unjudged_in_lanes']} unjudged in lanes (ignored)" if n["unjudged_in_lanes"] else "")
         + f" · lanes: {', '.join(meta['lanes'])} · rankings: {', '.join(meta['rankings'])} · window={meta['window']}"
     ]
+    depths = meta.get("depths", {})
+    if depths:
+        line = "depth: " + " · ".join(f"{name} {depth}" for name, depth in depths.items())
+        if len(set(depths.values())) > 1:
+            line += "   (lanes differ in depth; fusion treats a document below a lane's depth as absent from it)"
+        lines.append(line)
+    missing = {name: count for name, count in meta.get("missing_from_lane", {}).items() if count}
+    if missing:
+        lines.append("judged queries missing from a lane, scored as misses: "
+                     + " · ".join(f"{name} {count}" for name, count in missing.items()))
     if meta.get("weights"):
         lines.append("convex weights: " + ", ".join(f"{k}={v:.2f}" for k, v in meta["weights"].items()))
     for name in meta["rankings"]:
@@ -118,14 +128,20 @@ def render(report: Mapping, *, ci_k: int | None = None, markdown: bool = False) 
 
 
 def render_calibration(cal: Mapping) -> str:
-    return "\n".join([
+    operating = cal["operating"]
+    lines = [
         f"calibration on {cal['n']['positives']} positives · {cal['n']['negatives']} negatives · gate on {cal['gate_on']} ({cal['gate_level']} level)",
         "fusion weights (" + cal["fit"]["objective"] + "): " + ", ".join(f"{k}={v:.2f}" for k, v in cal["weights"].items())
         + f" -> {cal['fit']['convex']:.4f}   (rrf baseline {cal['fit']['rrf']:.4f})",
         f"null floor: n={cal['null']['n']} mean={fmt(cal['null']['mean'])} std={fmt(cal['null']['std'])} -> floor {fmt(cal['null']['floor'])}",
         f"conformal floor (alpha={cal['conformal']['alpha']:g}): n={cal['conformal']['n']} (min n for a finite bound: {cal['conformal']['min_n']}) -> floor {fmt(cal['conformal']['floor'])}",
-        f"operating floor at FPIR <= {cal['operating']['fpir_max']:g}: {fmt(cal['operating']['floor'])} -> FPIR {cal['operating']['fpir']['p']:.2f}, FNIR {cal['operating']['fnir']['p']:.2f} (on the calibration queries)",
-    ])
+        f"operating floor at FPIR <= {operating['fpir_max']:g}: {fmt(operating['floor'])} -> FPIR {operating['fpir']['p']:.2f} "
+        f"(95% up to {operating['fpir']['hi']:.2f}), FNIR {operating['fnir']['p']:.2f} (on the calibration queries)",
+    ]
+    missing = {k: v for k, v in cal["n"].get("missing_from_lane", {}).items() if v}
+    if missing:
+        lines.append("judged queries missing from a lane, scored as misses: " + " · ".join(f"{k} {v}" for k, v in missing.items()))
+    return "\n".join(lines)
 
 
 def render_verdict(rows: Sequence[Mapping], summary: str, markdown: bool = False) -> str:

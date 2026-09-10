@@ -94,7 +94,7 @@ that lands on a float uses a `<name>_ci` sibling when one exists.
 ## Report JSON (`evaluate --out`)
 
 ```
-meta          lanes, rankings, levels, ks, window, rrf_k, weights, blind, gate_on, n {queries, positives, negatives, indexed, unjudged_in_lanes}
+meta          lanes, rankings, levels, ks, window, rrf_k, weights, blind, gate_on, depths {lane: depth}, missing_from_lane {lane: count}, n {queries, positives, negatives, indexed, unjudged_in_lanes}
 metrics       ranking -> level -> stratum -> {n, mrr, hit@k, hit@k_ci, recall@k, ndcg@k}   (recall and ndcg at doc level only)
 attribution   counts, not_surfaced_share, not_surfaced_by[ranking], blind_share_of_misses[ranking]
 negatives     ranking -> proportion of negatives that received any candidate
