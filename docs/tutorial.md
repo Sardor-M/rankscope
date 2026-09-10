@@ -138,6 +138,11 @@ Question: find the floor where FPIR first reaches 0.05 on the held-out negatives
 compare it with the floor `calibrate` chose on the calibration negatives. Which is the
 measurement and which is the tuning?
 
+Exercise: rerun `calibrate` with `--conservative`. With 60 calibration negatives the
+floor comes out infinite, and the output says why: zero false accepts in 60 only bounds
+FPIR at 6 percent on the upper limit. Raise `--fpir` until a finite floor appears, or
+regenerate with more negatives.
+
 Exercise: with 30 negatives the smallest non-zero FPIR you can observe is 1/30. How many
 negatives do you need to *claim* FPIR at or below 0.02 after observing zero false accepts?
 `rankscope.negatives_for(0.02)` has the Wilson answer; the rule of three has another.

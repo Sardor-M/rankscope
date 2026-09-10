@@ -72,7 +72,7 @@ receives candidates from every lane, which is why a gate exists.
 | Command | What it does |
 | :--- | :--- |
 | `evaluate` | Metrics per lane and per fusion, miss attribution, negatives, gates. Text, Markdown or JSON output. |
-| `calibrate` | Fits fusion weights and three abstain floors on a separate calibration set and writes `thresholds.json`. |
+| `calibrate` | Fits fusion weights and three abstain floors on a separate calibration set and writes `thresholds.json`. `--conservative` picks the FPIR floor on the Wilson upper bound. |
 | `compare` | Paired bootstrap of one metric between two rankings, with a minimum effect size. |
 | `verdict` | Judges a report against rules written before the run. Exits 1 on failure, so it fits in CI. |
 | `fuse` | Writes a fused TREC run (reciprocal rank fusion, or weighted) from several lanes. |

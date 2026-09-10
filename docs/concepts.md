@@ -167,9 +167,14 @@ FNIR        = (accept_wrong + abstain) / positives
 ```
 
 A wrong accept counts as a miss, the 1:N identification convention. `sweep` evaluates
-every floor the observed top scores suggest; `operating_point` picks the lowest floor whose
-FPIR is within a target. Done on calibration negatives that is a threshold; done on the
-negatives you report it is tuning. Both are printed so the difference stays visible.
+every floor the observed top scores suggest, in linear time: the eligible scores are
+sorted once and each floor is a bisection. `operating_point` picks the lowest floor whose
+FPIR is within a target, on the point estimate or, with `--conservative`, on the Wilson
+upper bound, which is what a promise like "at most 5 percent" needs. When no finite floor
+qualifies on the upper bound the answer is +inf, and the report says how many negatives
+with zero false accepts would make one possible (73 for 5 percent). Done on calibration
+negatives that is a threshold; done on the negatives you report it is tuning. Both are
+printed so the difference stays visible.
 
 ## Paired bootstrap (`stats.paired_bootstrap`)
 

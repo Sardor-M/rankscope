@@ -139,9 +139,10 @@ def sweep(
     return rows
 
 
-def operating_point(rows: Sequence[dict], fpir_max: float) -> dict:
-    """The lowest floor whose FPIR point estimate is within `fpir_max`."""
+def operating_point(rows: Sequence[dict], fpir_max: float, *, conservative: bool = False) -> dict:
+    """The lowest floor whose FPIR is within `fpir_max`: its point estimate, or its Wilson upper bound."""
+    key = "hi" if conservative else "p"
     for row in rows:
-        if row["fpir"]["p"] <= fpir_max:
+        if row["fpir"][key] <= fpir_max:
             return row
     return rows[-1]

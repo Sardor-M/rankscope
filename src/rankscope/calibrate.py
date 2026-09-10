@@ -37,6 +37,7 @@ def calibrate(
     margin: float = 0.0,
     group_of: GroupOf | None = None,
     gate_level: str = "doc",
+    conservative: bool = False,
 ) -> dict:
     names = list(lanes)
     positives = qrels.positives()
@@ -75,7 +76,7 @@ def calibrate(
     conformal = {"alpha": alpha, "n": len(true_scores), "min_n": conformal_min_n(alpha),
                  "floor": conformal_floor(true_scores, alpha)}
     rows = sweep(qrels, rankings, margin=margin, level=gate_level, group_of=group_of)
-    operating = operating_point(rows, fpir)
+    operating = operating_point(rows, fpir, conservative=conservative)
     return {
         "gate_on": gate_on,
         "gate_level": gate_level,
@@ -87,7 +88,7 @@ def calibrate(
                 "grid": [{"weights": w, "value": v} for w, v in table]},
         "null": null,
         "conformal": conformal,
-        "operating": {"fpir_max": fpir, **operating},
+        "operating": {"fpir_max": fpir, "rule": "wilson-upper" if conservative else "point", **operating},
         "gates": [
             {"name": "null", "floor": null["floor"]},
             {"name": f"conformal-{alpha:g}", "floor": conformal["floor"]},

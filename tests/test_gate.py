@@ -78,3 +78,10 @@ def test_sweep_matches_the_brute_force_definition():
             assert row["floor"] == ref["floor"]
             assert row["fpir"] == ref["far"] and row["fnir"] == ref["fnir"]
 
+
+def test_operating_point_conservative_uses_the_upper_bound():
+    rows = [{"floor": 0.5, "fpir": {"p": 0.0, "k": 0, "n": 30, "lo": 0.0, "hi": 0.114}, "fnir": {"p": 0.2}},
+            {"floor": math.inf, "fpir": {"p": 0.0, "k": 0, "n": 30, "lo": 0.0, "hi": 0.114}, "fnir": {"p": 1.0}}]
+    assert g.operating_point(rows, 0.05)["floor"] == 0.5
+    assert g.operating_point(rows, 0.05, conservative=True)["floor"] == math.inf
+    assert g.operating_point(rows, 0.12, conservative=True)["floor"] == 0.5

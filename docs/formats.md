@@ -69,13 +69,13 @@ document absent from this list is a coverage miss, not a retrieval miss.
   "fit": {"objective": "mrr", "window": 5, "convex": 0.819, "rrf": 0.485, "grid": [...]},
   "null": {"n": 60, "mean": 0.665, "std": 0.048, "floor": 0.810},
   "conformal": {"alpha": 0.1, "n": 107, "min_n": 9, "floor": 0.663},
-  "operating": {"fpir_max": 0.05, "floor": 0.760, "fpir": {...}, "fnir": {...}},
+  "operating": {"fpir_max": 0.05, "rule": "point", "floor": 0.760, "fpir": {...}, "fnir": {...}},
   "gates": [{"name": "null", "floor": 0.810}, {"name": "conformal-0.1", "floor": 0.663}, {"name": "fpir-0.05", "floor": 0.760}]
 }
 ```
 
-`evaluate --thresholds FILE` applies the weights (adding `convex` to the rankings), the
-gate target and the three floors. Infinite floors are written as the strings `"inf"` and
+`rule` is `point` or `wilson-upper` (`calibrate --conservative`). `evaluate --thresholds FILE`
+applies the weights (adding `convex` to the rankings), the gate target and the three floors. Infinite floors are written as the strings `"inf"` and
 `"-inf"`.
 
 ## Gates (rules for `verdict`)

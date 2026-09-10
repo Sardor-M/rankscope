@@ -85,7 +85,7 @@ def cmd_calibrate(args) -> int:
     result = calibrate(
         lanes, qrels, gate_on=gate_on, alpha=args.alpha, fpir=args.fpir, sigmas=args.sigmas, rrf_k=args.rrf_k,
         objective=args.objective, window=args.window, step=args.step, margin=args.margin, group_of=group_of,
-        gate_level=args.gate_level,
+        gate_level=args.gate_level, conservative=args.conservative,
     )
     print(render_calibration(result))
     dump(result, args.out)
@@ -214,6 +214,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--gate-level", choices=("doc", "group"), default="doc")
     p.add_argument("--alpha", type=float, default=0.1, help="conformal miss rate")
     p.add_argument("--fpir", type=float, default=0.05, help="false-positive identification rate to bound")
+    p.add_argument("--conservative", action="store_true",
+                   help="choose the FPIR floor on the Wilson upper bound rather than the point estimate")
     p.add_argument("--sigmas", type=float, default=3.0)
     p.add_argument("--objective", choices=("mrr", "hit"), default="mrr")
     p.add_argument("--window", type=int, default=5)

@@ -6,6 +6,7 @@ import math
 from typing import Mapping, Sequence
 
 from .metrics import ALL
+from .stats import negatives_for
 
 
 def fmt(value: float, digits: int = 4) -> str:
@@ -129,15 +130,19 @@ def render(report: Mapping, *, ci_k: int | None = None, markdown: bool = False) 
 
 def render_calibration(cal: Mapping) -> str:
     operating = cal["operating"]
+    rule = " on the Wilson upper bound" if operating.get("rule") == "wilson-upper" else ""
     lines = [
         f"calibration on {cal['n']['positives']} positives · {cal['n']['negatives']} negatives · gate on {cal['gate_on']} ({cal['gate_level']} level)",
         "fusion weights (" + cal["fit"]["objective"] + "): " + ", ".join(f"{k}={v:.2f}" for k, v in cal["weights"].items())
         + f" -> {cal['fit']['convex']:.4f}   (rrf baseline {cal['fit']['rrf']:.4f})",
         f"null floor: n={cal['null']['n']} mean={fmt(cal['null']['mean'])} std={fmt(cal['null']['std'])} -> floor {fmt(cal['null']['floor'])}",
         f"conformal floor (alpha={cal['conformal']['alpha']:g}): n={cal['conformal']['n']} (min n for a finite bound: {cal['conformal']['min_n']}) -> floor {fmt(cal['conformal']['floor'])}",
-        f"operating floor at FPIR <= {operating['fpir_max']:g}: {fmt(operating['floor'])} -> FPIR {operating['fpir']['p']:.2f} "
+        f"operating floor at FPIR <= {operating['fpir_max']:g}{rule}: {fmt(operating['floor'])} -> FPIR {operating['fpir']['p']:.2f} "
         f"(95% up to {operating['fpir']['hi']:.2f}), FNIR {operating['fnir']['p']:.2f} (on the calibration queries)",
     ]
+    if math.isinf(operating["floor"]) and operating.get("rule") == "wilson-upper":
+        lines.append(f"no finite floor bounds FPIR at {operating['fpir_max']:g} on its upper limit with {cal['n']['negatives']} negatives; "
+                     f"zero false accepts in at least {negatives_for(operating['fpir_max'])} would")
     missing = {k: v for k, v in cal["n"].get("missing_from_lane", {}).items() if v}
     if missing:
         lines.append("judged queries missing from a lane, scored as misses: " + " · ".join(f"{k} {v}" for k, v in missing.items()))

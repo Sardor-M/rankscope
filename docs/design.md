@@ -57,6 +57,16 @@ RRF over lanes of depth 20 is a different function from RRF over depth 100 trunc
 is the caller's responsibility. `fuse` writes the result as a TREC run so it can go back
 through any other tool.
 
+## The sweep is linear, and the operating point can be conservative
+
+Every observed top score is a candidate floor, so a naive sweep re-evaluates every query
+for every floor and is quadratic; on 4,500 queries that was 20 seconds. The scores that a
+floor alone would decide are sorted once and each floor is a bisection. The operating
+point is chosen on the FPIR point estimate by default, because that is what most people
+expect, and on the Wilson upper bound with `--conservative`, because that is what a stated
+bound actually requires. When the upper bound never reaches the target the floor is
++inf and the report names the negative count that would change that.
+
 ## Verdicts on point and on interval
 
 A rules file judged only on point estimates rewards small samples; judged only on

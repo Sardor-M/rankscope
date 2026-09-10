@@ -106,3 +106,14 @@ def test_depth_missing_lanes_and_conservative_floor(synth_dir, tmp_path, capsys)
                      "--qrels", str(synth_dir / "qrels.txt"), "--quiet"]) == 0
     out = capsys.readouterr().out
     assert "missing from a lane" in out and "partial 89" in out and "lanes differ in depth" in out
+
+    thresholds = tmp_path / "t.json"
+    assert cli.main(["calibrate", *lanes, "--qrels", str(synth_dir / "qrels-calibration.txt"), "--gate-on", "dense",
+                     "--conservative", "--out", str(thresholds)]) == 0
+    out = capsys.readouterr().out
+    cal = load(thresholds)
+    assert cal["operating"]["rule"] == "wilson-upper" and cal["operating"]["floor"] == math.inf
+    assert "no finite floor" in out and "at least 73" in out
+    assert cli.main(["calibrate", *lanes, "--qrels", str(synth_dir / "qrels-calibration.txt"), "--gate-on", "dense",
+                     "--conservative", "--fpir", "0.15", "--out", str(thresholds)]) == 0
+    assert load(thresholds)["operating"]["floor"] < math.inf
