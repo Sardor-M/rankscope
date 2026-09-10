@@ -1,6 +1,6 @@
 [project]
 name = "rankscope"
-version = "0.1.0"
+version = "0.2.0"
 description = "Retrieval Eval that says how sure it is: confidence intervals, miss attribution, rank fusion and a calibrated abstain gate for search and RAG pipelines."
 readme = "README.md"
 license = "MIT"

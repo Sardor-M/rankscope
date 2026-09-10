@@ -184,7 +184,7 @@ python -m build
 
 ## Status
 
-Version 0.1.0. The arithmetic is tested and cross-checked against the JavaScript port; the
+Version 0.2.0. The arithmetic is tested and cross-checked against the JavaScript port; the
 command-line surface may still change before 1.0. Not included yet: mutual nearest
 neighbour gates, per-group caps with document-first re-ranking, and significance tests
 other than the paired bootstrap.

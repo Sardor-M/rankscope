@@ -10,7 +10,7 @@ from .ranks import Judgment, Qrels, group_by_mapping, group_by_separator, rank_o
 from .stats import conformal_floor, conformal_quantile, negatives_for, null_floor, paired_bootstrap, wilson
 from .verdict import judge, overall
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "Decision", "Gate", "Hit", "Judgment", "Lane", "Qrels", "calibrate", "conformal_floor", "conformal_quantile",
