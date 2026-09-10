@@ -46,3 +46,35 @@ def test_evaluate_sweep_and_operating_point():
     assert [row["fpir"]["p"] for row in rows] == sorted((row["fpir"]["p"] for row in rows), reverse=True)
     assert g.operating_point(rows, 0.0)["floor"] > 0.7
     assert g.operating_point(rows, 1.0)["floor"] == -math.inf
+
+
+def _reference_sweep(qrels, rankings, margin=0.0):
+    tops = sorted({hits[0].score for hits in rankings.values() if hits and hits[0].score is not None})
+    return [g.evaluate(qrels, rankings, g.Gate("ref", floor, margin)) for floor in [-math.inf, *tops, math.inf]]
+
+
+def test_sweep_matches_the_brute_force_definition():
+    import random
+
+    rng = random.Random(4)
+    judgments, rankings = [], {}
+    for i in range(120):
+        query = f"q{i}"
+        negative = i % 3 == 0
+        judgments.append(Judgment(query, {} if negative else {"G1#t": 1}))
+        if i % 11 == 0:
+            rankings[query] = []
+        elif i % 13 == 0:
+            rankings[query] = [Hit("G1#t"), Hit("G2#a")]
+        else:
+            top = rng.choice(["G1#t", "G2#a"])
+            first = round(rng.random(), 3)
+            rankings[query] = [Hit(top, first), Hit("G3#z", round(first - rng.random() * 0.2, 3))]
+    for margin in (0.0, 0.05):
+        fast = g.sweep(Qrels(judgments), rankings, margin=margin)
+        slow = _reference_sweep(Qrels(judgments), rankings, margin)
+        assert len(fast) == len(slow)
+        for row, ref in zip(fast, slow):
+            assert row["floor"] == ref["floor"]
+            assert row["fpir"] == ref["far"] and row["fnir"] == ref["fnir"]
+

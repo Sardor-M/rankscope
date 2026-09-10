@@ -96,15 +96,8 @@ def paired_bootstrap(
         raise ValueError("no queries to compare")
     deltas = [c - b for b, c in zip(baseline, candidate)]
     rng = random.Random(seed)
-    means = []
-    wins = 0
-    for _ in range(resamples):
-        total = 0.0
-        for _ in range(n):
-            total += deltas[rng.randrange(n)]
-        resampled = total / n
-        means.append(resampled)
-        wins += resampled > 0.0
+    means = [sum(rng.choices(deltas, k=n)) / n for _ in range(resamples)]
+    wins = sum(1 for resampled in means if resampled > 0.0)
     means.sort()
     return {
         "n": n,
@@ -124,11 +117,5 @@ def bootstrap_mean(values: Sequence[float], *, resamples: int = 10_000, seed: in
     if n == 0:
         return (0.0, 0.0)
     rng = random.Random(seed)
-    means = []
-    for _ in range(resamples):
-        total = 0.0
-        for _ in range(n):
-            total += values[rng.randrange(n)]
-        means.append(total / n)
-    means.sort()
+    means = sorted(sum(rng.choices(values, k=n)) / n for _ in range(resamples))
     return (means[int(0.025 * resamples)], means[min(int(0.975 * resamples), resamples - 1)])

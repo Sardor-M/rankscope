@@ -12,7 +12,7 @@ from .fusion import parse_weights
 from .gate import Gate
 from .jsonio import dump, dumps, load
 from .lanes import Lane, load_lanes, read_ids, read_mapping, read_qrels, write_lane
-from .measure import CONVEX, RRF, evaluate, rankings_for
+from .measure import CONVEX, RRF, evaluate, per_query_metrics, rankings_for
 from .ranks import group_by_mapping, group_by_separator
 from .report import query_lines, render, render_calibration, render_compare, render_verdict
 from .stats import paired_bootstrap
@@ -101,20 +101,13 @@ def cmd_compare(args) -> int:
     for name in (baseline, candidate):
         if name not in names:
             raise SystemExit(f"unknown ranking {name!r}; choose from {names}")
-    report = evaluate(lanes, qrels, ks=_ks(args.k), group_of=group_of,
-                      fuse=(RRF, CONVEX) if weights else (RRF,), rrf_k=args.rrf_k, weights=weights)
+    fuse = (RRF, CONVEX) if weights else (RRF,)
     metric = args.metric
     a, b = [], []
-    for record in report["queries"]:
-        if record["negative"]:
-            continue
-        query = record["query"]
-        judgment = qrels.by_query[query]
+    for judgment in qrels.positives():
+        every = rankings_for(lanes, judgment.query, fuse=fuse, rrf_k=args.rrf_k, weights=weights)
         for name, values in ((baseline, a), (candidate, b)):
-            hits = rankings_for(lanes, query, fuse=(RRF, CONVEX) if weights else (RRF,), rrf_k=args.rrf_k, weights=weights)[name]
-            from .measure import per_query_metrics
-
-            metrics = per_query_metrics(hits, judgment, _ks(args.k), group_of)["doc"]
+            metrics = per_query_metrics(every[name], judgment, _ks(args.k), group_of)["doc"]
             if metric == "mrr":
                 values.append(1.0 / metrics["rank"] if metrics["rank"] else 0.0)
             elif metric.startswith("hit@"):

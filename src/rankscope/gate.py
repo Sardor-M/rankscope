@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from bisect import bisect_left
 from dataclasses import dataclass
 from typing import Mapping, Sequence
 
@@ -88,6 +89,33 @@ def evaluate(
     }
 
 
+def _eligible_scores(
+    qrels: Qrels, rankings: Mapping[str, Sequence[Hit]], margin: float, level: str, group_of: GroupOf | None
+) -> tuple[list[float], list[float], int, int]:
+    """Sorted top scores of negatives and of correct positives that a floor alone would decide."""
+    negatives: list[float] = []
+    positives: list[float] = []
+    n_pos = n_neg = 0
+    for judgment in qrels:
+        if judgment.negative:
+            n_neg += 1
+        else:
+            n_pos += 1
+        hits = rankings.get(judgment.query, [])
+        if not hits:
+            continue
+        score = hits[0].score if hits[0].score is not None else -math.inf
+        if len(hits) > 1:
+            second = hits[1].score if hits[1].score is not None else -math.inf
+            if score - second < margin:
+                continue
+        if judgment.negative:
+            negatives.append(score)
+        elif rank_of([hits[0]], judgment.relevant, level=level, group_of=group_of) == 1:
+            positives.append(score)
+    return sorted(negatives), sorted(positives), n_pos, n_neg
+
+
 def sweep(
     qrels: Qrels,
     rankings: Mapping[str, Sequence[Hit]],
@@ -96,12 +124,18 @@ def sweep(
     level: str = "doc",
     group_of: GroupOf | None = None,
 ) -> list[dict]:
-    """FPIR and FNIR at every floor the observed top scores suggest, lowest floor first."""
+    """FPIR and FNIR at every floor the observed top scores suggest, lowest floor first; linear time."""
     tops = sorted({hits[0].score for hits in rankings.values() if hits and hits[0].score is not None})
+    negatives, positives, n_pos, n_neg = _eligible_scores(qrels, rankings, margin, level, group_of)
     rows = []
     for floor in [-math.inf, *tops, math.inf]:
-        result = evaluate(qrels, rankings, Gate("sweep", floor, margin), level=level, group_of=group_of)
-        rows.append({"floor": floor, "fpir": result["far"], "fnir": result["fnir"]})
+        accepted_negatives = len(negatives) - bisect_left(negatives, floor)
+        accepted_positives = len(positives) - bisect_left(positives, floor)
+        rows.append({
+            "floor": floor,
+            "fpir": proportion(accepted_negatives, n_neg),
+            "fnir": proportion(n_pos - accepted_positives, n_pos),
+        })
     return rows
 
 
