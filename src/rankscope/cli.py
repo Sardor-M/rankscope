@@ -1,4 +1,4 @@
-"""rankscope: evaluate | calibrate | compare | verdict | fuse | synth | goldens."""
+"""rankscope: evaluate | calibrate | compare | verdict | diff | fuse | synth | goldens."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import goldens, synth
+from . import diff as diffing, goldens, synth
 from .calibrate import calibrate
 from .fusion import parse_weights
 from .gate import Gate
@@ -14,7 +14,7 @@ from .jsonio import dump, dumps, load
 from .lanes import Lane, load_lanes, read_ids, read_mapping, read_qrels, truncate, write_lane
 from .measure import CONVEX, RRF, evaluate, per_query_metrics, rankings_for
 from .ranks import group_by_mapping, group_by_separator
-from .report import query_lines, render, render_calibration, render_compare, render_verdict
+from .report import query_lines, render, render_calibration, render_compare, render_diff, render_verdict
 from .stats import paired_bootstrap
 from .verdict import judge, overall
 
@@ -134,6 +134,16 @@ def cmd_verdict(args) -> int:
     return 0 if all(row["point"] for row in rows) else 1
 
 
+def cmd_diff(args) -> int:
+    rows = diffing.diff(load(args.before), load(args.after))
+    shown = rows if args.all else diffing.notable(rows)
+    counts = diffing.summary(rows)
+    print(render_diff(shown, counts, markdown=args.format == "markdown"))
+    if args.out:
+        dump({"before": str(args.before), "after": str(args.after), "rows": rows, "summary": counts}, args.out)
+    return 1 if args.fail_on_regression and counts[diffing.REGRESSED] else 0
+
+
 def cmd_fuse(args) -> int:
     lanes = load_lanes(args.lane)
     weights = parse_weights(args.weights) if args.weights and not args.weights.endswith(".json") else (
@@ -247,6 +257,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--gates", required=True)
     p.add_argument("--format", choices=("text", "markdown"), default="text")
     p.set_defaults(func=cmd_verdict)
+
+    p = sub.add_parser("diff", help="what moved between two reports, and whether the intervals overlap")
+    p.add_argument("--before", required=True, help="report JSON from `evaluate --out`")
+    p.add_argument("--after", required=True)
+    p.add_argument("--all", action="store_true", help="every row, not only the `all` stratum and the rows that moved")
+    p.add_argument("--fail-on-regression", action="store_true", help="exit 1 when any metric regressed beyond noise")
+    p.add_argument("--format", choices=("text", "markdown"), default="text")
+    p.add_argument("--out", help="write the full diff JSON here")
+    p.set_defaults(func=cmd_diff)
 
     p = sub.add_parser("fuse", help="write a fused TREC run from several lanes")
     _add_inputs(p, qrels=False, depth=False)

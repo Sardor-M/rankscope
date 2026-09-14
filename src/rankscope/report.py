@@ -166,6 +166,18 @@ def render_verdict(rows: Sequence[Mapping], summary: str, markdown: bool = False
     return "\n".join(lines + ["", f"verdict: {summary}"])
 
 
+def render_diff(rows: Sequence[Mapping], counts: Mapping[str, int], markdown: bool = False) -> str:
+    body = []
+    for row in rows:
+        arrow = "lower is better" if row["lower_is_better"] else ""
+        body.append([row["where"], row["metric"], f"{row['before']:.3f}", f"{row['after']:.3f}",
+                     f"{row['delta']:+.3f}", row["verdict"] + (f" ({arrow})" if arrow and row["verdict"] != "no interval" else "")])
+    lines = table(["where", "metric", "before", "after", "delta", "verdict"], body, markdown)
+    lines.append("")
+    lines.append("summary: " + " · ".join(f"{count} {name}" for name, count in counts.items()))
+    return "\n".join(lines)
+
+
 def render_compare(result: Mapping, metric: str, baseline: str, candidate: str, min_delta: float) -> str:
     better = result["p_better"] >= 0.95 and result["delta"] >= min_delta
     return "\n".join([
