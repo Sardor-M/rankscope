@@ -29,6 +29,21 @@ class Lane:
     def has_scores(self) -> bool:
         return all(hit.score is not None for hits in self.hits.values() for hit in hits)
 
+    @classmethod
+    def from_dict(cls, name: str, mapping: Mapping[str, Mapping[str, float]]) -> "Lane":
+        """`{query: {doc: score}}`, the pytrec_eval and BEIR convention; hits ordered by score."""
+        lane = cls(name)
+        for query, scores in mapping.items():
+            if not isinstance(scores, Mapping):
+                raise ValueError(f"lane {name!r}: query {query!r} must map doc ids to scores")
+            lane.hits[str(query)] = _by_score([Hit(str(doc), float(score)) for doc, score in scores.items()])
+        return lane
+
+    def to_dict(self) -> dict[str, dict[str, float]]:
+        """The same convention back; a hit without a score gets 1 / rank."""
+        return {query: {hit.doc: hit.score if hit.score is not None else 1.0 / rank
+                        for rank, hit in enumerate(hits, start=1)} for query, hits in self.hits.items()}
+
 
 def _by_score(hits: list[Hit]) -> list[Hit]:
     """trec_eval's rule: score descending. Ties break on doc id ascending so runs are reproducible."""
@@ -44,9 +59,14 @@ def _check_unique(path: Path, lineno: int, query: str, hits: list[Hit]) -> None:
 
 
 def read_lane(path: str | Path, name: str | None = None) -> Lane:
-    """TREC run (`qid Q0 docid rank score tag`, ordered by score) or JSONL (`{"query", "hits": [...]}`, file order)."""
+    """TREC run (ordered by score), JSONL (`{"query", "hits": [...]}`, file order), or JSON `{query: {doc: score}}`."""
     path = Path(path)
     lane = Lane(name or path.stem)
+    if path.suffix == ".json":
+        mapping = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(mapping, Mapping):
+            raise ValueError(f"{path}: a JSON lane is an object of the form {{query: {{doc: score}}}}")
+        return Lane.from_dict(lane.name, mapping)
     lines = path.read_text(encoding="utf-8").splitlines()
     if path.suffix == ".jsonl":
         for lineno, line in enumerate(lines, 1):
@@ -102,8 +122,13 @@ def load_lanes(specs: Iterable[str]) -> dict[str, Lane]:
 
 
 def read_qrels(path: str | Path) -> Qrels:
-    """TREC qrels (`qid 0 docid rel`) or JSONL (`{"query", "relevant": {doc: grade}, "stratum"?}`)."""
+    """TREC qrels (`qid 0 docid rel`), JSONL (`{"query", "relevant": {...}, "stratum"?}`), or JSON `{query: {doc: grade}}`."""
     path = Path(path)
+    if path.suffix == ".json":
+        mapping = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(mapping, Mapping):
+            raise ValueError(f"{path}: JSON qrels are an object of the form {{query: {{doc: grade}}}}")
+        return Qrels.from_dict(mapping)
     lines = path.read_text(encoding="utf-8").splitlines()
     if path.suffix == ".jsonl":
         judgments = []

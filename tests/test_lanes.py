@@ -69,3 +69,24 @@ def test_truncate_cuts_every_lane_to_the_same_depth():
     assert lanes["a"].depth() == 3
     with pytest.raises(ValueError):
         truncate(lanes, 0)
+
+
+def test_json_dict_lane_and_qrels(tmp_path):
+    import json
+
+    from rankscope.ranks import Qrels
+
+    (tmp_path / "dense.json").write_text(json.dumps({"q1": {"d2": 0.3, "d1": 0.9}, "q2": {"d3": 0.5}}))
+    lane = read_lane(tmp_path / "dense.json")
+    assert lane.name == "dense" and [h.doc for h in lane.hits["q1"]] == ["d1", "d2"] and lane.hits["q1"][0].score == 0.9
+    assert lane.to_dict() == {"q1": {"d1": 0.9, "d2": 0.3}, "q2": {"d3": 0.5}}
+    (tmp_path / "qrels.json").write_text(json.dumps({"q1": {"d1": 2, "d2": 0}, "n1": {"d9": 0}}))
+    qrels = read_qrels(tmp_path / "qrels.json")
+    assert qrels.by_query["q1"].relevant == frozenset({"d1"}) and qrels.by_query["n1"].negative
+    assert Qrels.from_dict({"q1": {"d1": 1}}, {"q1": "hard"}).by_query["q1"].stratum == "hard"
+    assert Lane.from_dict("x", {"q1": {"a": 1.0}}).hits["q1"][0].doc == "a"
+    (tmp_path / "bad.json").write_text("[1, 2]")
+    with pytest.raises(ValueError):
+        read_lane(tmp_path / "bad.json")
+    with pytest.raises(ValueError):
+        Lane.from_dict("x", {"q1": [1, 2]})

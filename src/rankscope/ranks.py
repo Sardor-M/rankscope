@@ -44,6 +44,17 @@ class Qrels:
     def __iter__(self):
         return iter(self.by_query.values())
 
+    @classmethod
+    def from_dict(cls, mapping: Mapping[str, Mapping[str, int]], strata: Mapping[str, str] | None = None) -> "Qrels":
+        """`{query: {doc: grade}}`, the pytrec_eval and BEIR convention; a query with no positive grade is a negative."""
+        judgments = []
+        for query, grades in mapping.items():
+            if not isinstance(grades, Mapping):
+                raise ValueError(f"qrels for query {query!r} must be a mapping of doc to grade")
+            judgments.append(Judgment(str(query), {str(doc): int(grade) for doc, grade in grades.items()},
+                                      (strata or {}).get(str(query), UNLABELLED)))
+        return cls(judgments)
+
     def positives(self) -> list[Judgment]:
         return [j for j in self.by_query.values() if not j.negative]
 
