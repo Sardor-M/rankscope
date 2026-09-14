@@ -5,7 +5,7 @@ from __future__ import annotations
 from math import log2
 from typing import Mapping, Sequence
 
-from .stats import wilson
+from .stats import bootstrap_mean, wilson
 
 ALL = "all"
 DEFAULT_KS = (1, 5, 10, 20)
@@ -45,12 +45,25 @@ def proportion(successes: int, n: int) -> dict:
     return {"p": successes / n if n else 0.0, "k": successes, "n": n, "lo": lo, "hi": hi}
 
 
-def summarise(rows: Sequence[tuple[str, Mapping[str, float]]], ks: Sequence[int] = DEFAULT_KS) -> dict:
-    """Per-stratum hit@k with Wilson intervals, MRR, and the mean of every other metric; plus `all`."""
+def headline_metrics(ks: Sequence[int]) -> list[str]:
+    """The mean metrics that carry a bootstrap interval by default: MRR, recall at the deepest k, nDCG at 10."""
+    return ["mrr", f"recall@{max(ks)}", f"ndcg@{10 if 10 in ks else max(ks)}"]
+
+
+def summarise(
+    rows: Sequence[tuple[str, Mapping[str, float]]],
+    ks: Sequence[int] = DEFAULT_KS,
+    *,
+    resamples: int = 0,
+    seed: int = 0,
+    ci_metrics: Sequence[str] | None = None,
+) -> dict:
+    """Per-stratum hit@k with Wilson intervals, MRR and the other means (bootstrap intervals when asked); plus `all`."""
     by_stratum: dict[str, list[Mapping[str, float]]] = {ALL: []}
     for stratum, metrics in rows:
         by_stratum.setdefault(stratum, []).append(metrics)
         by_stratum[ALL].append(metrics)
+    wanted = list(ci_metrics) if ci_metrics is not None else headline_metrics(ks)
     out: dict[str, dict] = {}
     for stratum, items in by_stratum.items():
         ranks = [int(m["rank"]) for m in items]
@@ -59,9 +72,15 @@ def summarise(rows: Sequence[tuple[str, Mapping[str, float]]], ks: Sequence[int]
             entry[f"hit@{k}"] = hit_rate(ranks, k)
             entry[f"hit@{k}_ci"] = list(wilson(hits_at(ranks, k), len(ranks)))
         extra = sorted({key for m in items for key in m if key != "rank"})
+        per_query: dict[str, list[float]] = {"mrr": [1.0 / r if r else 0.0 for r in ranks]}
         for key in extra:
             values = [float(m[key]) for m in items if key in m]
+            per_query[key] = values
             entry[key] = sum(values) / len(values) if values else 0.0
+        if resamples > 0 and len(items) > 1:
+            for key in wanted:
+                if key in per_query:
+                    entry[f"{key}_ci"] = list(bootstrap_mean(per_query[key], resamples=resamples, seed=seed))
         out[stratum] = entry
     return out
 

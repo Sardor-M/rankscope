@@ -34,6 +34,13 @@ def _heading(text: str, markdown: bool) -> list[str]:
     return ["", f"### {text}", ""] if markdown else ["", text]
 
 
+def with_interval(row: Mapping, key: str, digits: int) -> str:
+    """`0.301 [0.21-0.39]` when a bootstrap interval was recorded, else the value alone."""
+    text = f"{row[key]:.{digits}f}"
+    ci = row.get(f"{key}_ci")
+    return f"{text} [{ci[0]:.{digits}f}-{ci[1]:.{digits}f}]" if ci else text
+
+
 def metrics_table(summary: Mapping[str, Mapping], ks: Sequence[int], level: str, ci_k: int, markdown: bool) -> list[str]:
     headers = ["stratum", "n"] + [f"hit@{k}" for k in ks] + ["MRR", f"hit@{ci_k} 95% CI"]
     if level == "doc":
@@ -43,9 +50,9 @@ def metrics_table(summary: Mapping[str, Mapping], ks: Sequence[int], level: str,
         row = summary[stratum]
         lo, hi = row.get(f"hit@{ci_k}_ci", (0.0, 0.0))
         cells = [stratum, str(row["n"])] + [f"{row[f'hit@{k}']:.2f}" for k in ks]
-        cells += [f"{row['mrr']:.3f}", f"{lo:.2f}-{hi:.2f}"]
+        cells += [with_interval(row, "mrr", 3), f"{lo:.2f}-{hi:.2f}"]
         if level == "doc":
-            cells += [f"{row[f'recall@{max(ks)}']:.2f}", f"{row[f'ndcg@{10 if 10 in ks else max(ks)}']:.3f}"]
+            cells += [with_interval(row, f"recall@{max(ks)}", 2), with_interval(row, f"ndcg@{10 if 10 in ks else max(ks)}", 3)]
         rows.append(cells)
     return table(headers, rows, markdown)
 

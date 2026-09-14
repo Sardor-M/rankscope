@@ -68,6 +68,8 @@ def evaluate(
     gate_level: str = "doc",
     margin: float = 0.0,
     with_sweep: bool = False,
+    resamples: int = 1000,
+    seed: int = 0,
 ) -> dict:
     """The report: a JSON-able dict. `report.py` renders it; `verdict.py` judges it."""
     lane_names = list(lanes)
@@ -134,6 +136,7 @@ def evaluate(
             "rrf_k": rrf_k,
             "weights": dict(weights or {}),
             "blind": blind,
+            "resamples": resamples,
             "depths": {name: lane.depth() for name, lane in lanes.items()},
             "missing_from_lane": {
                 name: sum(1 for judgment in qrels if judgment.query not in lane.hits) for name, lane in lanes.items()
@@ -143,7 +146,10 @@ def evaluate(
                 "indexed": n_indexed, "unjudged_in_lanes": len(unjudged),
             },
         },
-        "metrics": {name: {level: summarise(rows[name][level], ks) for level in levels} for name in rows},
+        "metrics": {
+            name: {level: summarise(rows[name][level], ks, resamples=resamples, seed=seed) for level in levels}
+            for name in rows
+        },
         "attribution": {
             "counts": dict(attribution),
             "not_surfaced_share": proportion(attribution["not_surfaced"], n_indexed),

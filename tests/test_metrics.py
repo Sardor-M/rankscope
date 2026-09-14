@@ -34,3 +34,15 @@ def test_miss_attribution():
     assert m.miss_attribution(indexed=True, ranks={"a": 0, "b": 30}, window=5) == "not_surfaced"
     assert m.miss_attribution(indexed=True, ranks={"a": 0, "b": 3}, window=5) == "surfaced_by_b"
     assert m.miss_attribution(indexed=True, ranks={"b": 3, "a": 1}, window=5) == "surfaced_by_a+b"
+
+
+def test_summarise_bootstrap_intervals_on_the_mean_metrics():
+    rows = [("s", {"rank": r, "recall@20": v, "ndcg@10": v}) for r, v in zip([1, 2, 0, 5, 1, 3], [1, 0.5, 0, 0.3, 1, 0.7])]
+    table = m.summarise(rows, ks=(1, 5, 10, 20), resamples=500, seed=3)
+    for key in ("mrr", "recall@20", "ndcg@10"):
+        lo, hi = table[m.ALL][f"{key}_ci"]
+        assert lo <= table[m.ALL][key] <= hi and lo < hi
+    assert "ndcg@20_ci" not in table[m.ALL]
+    assert "mrr_ci" not in m.summarise(rows, ks=(1, 5), resamples=0)[m.ALL]
+    assert "mrr_ci" not in m.summarise(rows[:1], ks=(1, 5), resamples=100)[m.ALL]
+    assert m.headline_metrics((1, 5, 20)) == ["mrr", "recall@20", "ndcg@20"]

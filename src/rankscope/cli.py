@@ -64,7 +64,8 @@ def cmd_evaluate(args) -> int:
     report = evaluate(
         lanes, qrels, ks=_ks(args.k), window=args.window, group_of=group_of, fuse=fuse, rrf_k=args.rrf_k,
         weights=weights or None, corpus=corpus, blind=args.blind, gate_on=gate_on, gates=gates,
-        gate_level=args.gate_level, margin=args.margin, with_sweep=args.sweep,
+        gate_level=args.gate_level, margin=args.margin, with_sweep=args.sweep, resamples=args.resamples,
+        seed=args.seed,
     )
     if args.format == "json":
         print(dumps(report))
@@ -202,6 +203,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--gate-level", choices=("doc", "group"), default="doc")
     p.add_argument("--margin", type=float, default=0.0)
     p.add_argument("--sweep", action="store_true", help="FPIR/FNIR at every observed floor")
+    p.add_argument("--resamples", type=int, default=1000,
+                   help="bootstrap resamples behind the MRR, recall and nDCG intervals; 0 skips them")
+    p.add_argument("--seed", type=int, default=0)
     p.add_argument("--ci-k", type=int, help="k whose interval the tables show (default: max k)")
     p.add_argument("--format", choices=("text", "markdown", "json"), default="text")
     p.add_argument("--out", help="write the full report JSON here")
