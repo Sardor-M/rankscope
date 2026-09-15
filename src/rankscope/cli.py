@@ -14,7 +14,8 @@ from .jsonio import dump, dumps, load
 from .lanes import Lane, load_lanes, read_ids, read_mapping, read_qrels, truncate, write_lane
 from .measure import CONVEX, RRF, evaluate, per_query_metrics, rankings_for
 from .ranks import group_by_mapping, group_by_separator
-from .report import query_lines, render, render_calibration, render_compare, render_diff, render_verdict
+from .report import (query_lines, render, render_calibration, render_compare, render_diff, render_verdict,
+                     write_per_query_csv)
 from .stats import paired_bootstrap
 from .verdict import judge, overall
 
@@ -73,10 +74,13 @@ def cmd_evaluate(args) -> int:
         if not args.quiet and args.format == "text":
             print("\n".join(query_lines(report)))
             print()
-        print(render(report, ci_k=args.ci_k, markdown=args.format == "markdown"))
+        print(render(report, ci_k=args.ci_k, fmt=args.format))
     if args.out:
         dump(report, args.out)
         print(f"\nreport written: {args.out}", file=sys.stderr)
+    if args.per_query:
+        rows = write_per_query_csv(report, args.per_query)
+        print(f"per-query csv written: {args.per_query} ({rows} rows)", file=sys.stderr)
     return 0
 
 
@@ -217,8 +221,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="bootstrap resamples behind the MRR, recall and nDCG intervals; 0 skips them")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--ci-k", type=int, help="k whose interval the tables show (default: max k)")
-    p.add_argument("--format", choices=("text", "markdown", "json"), default="text")
+    p.add_argument("--format", choices=("text", "markdown", "latex", "json"), default="text")
     p.add_argument("--out", help="write the full report JSON here")
+    p.add_argument("--per-query", help="write one CSV row per judged query here")
     p.add_argument("--quiet", action="store_true", help="skip the per-query lines")
     p.set_defaults(func=cmd_evaluate)
 

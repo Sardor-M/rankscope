@@ -117,3 +117,20 @@ def test_depth_missing_lanes_and_conservative_floor(synth_dir, tmp_path, capsys)
     assert cli.main(["calibrate", *lanes, "--qrels", str(synth_dir / "qrels-calibration.txt"), "--gate-on", "dense",
                      "--conservative", "--fpir", "0.15", "--out", str(thresholds)]) == 0
     assert load(thresholds)["operating"]["floor"] < math.inf
+
+
+def test_latex_and_per_query_csv(synth_dir, tmp_path, capsys):
+    import csv
+
+    lanes = [f"--lane={synth_dir / 'lanes' / 'lexical.run'}", f"--lane={synth_dir / 'lanes' / 'dense.run'}"]
+    csv_path = tmp_path / "per-query.csv"
+    assert cli.main(["evaluate", *lanes, "--qrels", str(synth_dir / "qrels.txt"), "--group-sep", "#",
+                     "--gate-on", "dense", "--gate", "x=0.7", "--format", "latex", "--per-query", str(csv_path)]) == 0
+    out = capsys.readouterr().out
+    assert "\\begin{tabular}" in out and "hit@5" in out and "\\hline" in out
+    assert all(line.startswith(("%", "\\")) or line.endswith("\\\\") or not line.strip() for line in out.splitlines())
+    with csv_path.open(newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert len(rows) == 90 and "dense_group_rank" in rows[0] and "gate_x" in rows[0]
+    negatives = [row for row in rows if row["negative"] == "1"]
+    assert len(negatives) == 30 and negatives[0]["attribution"] == "" and negatives[0]["gate_x"] in ("false_accept", "reject")
