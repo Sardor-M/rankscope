@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0 (2026-09-15)
+
+- Gates can require a mutual nearest neighbour (the query within rank r among the queries
+  that retrieved its top document, built from the lanes); the sweep honours it, and
+  `--mutual` applies it to manual gates.
+- `margin_sweep`, an operating margin in the thresholds, and a `margin-<fpir>` gate.
+- Gate results per stratum; a per-stratum table when there is more than one.
+- `calibrate --objective ndcg`; thresholds gates carry margin and mutual.
+- `evaluate --cap N` and `--document-first` add re-ranked variants beside the base ranking.
+- Verdict rules with `against` compare two paths.
+- The JavaScript kernel and the goldens cover `minmax` and `convex`.
+- `docs/workbook.html`, the interactive workbook, ships with the repository; `docs/beir.md`
+  runs the loop on a public dataset.
+
 ## 0.3.0 (2026-09-15)
 
 - `.json` lanes and qrels in the `{query: {doc: score}}` and `{query: {doc: grade}}`
