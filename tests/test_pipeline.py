@@ -38,7 +38,7 @@ def test_full_pipeline(synth_dir, tmp_path, capsys):
     assert metrics["dense"]["doc"]["hard"]["hit@20"] >= 0.6
     assert metrics["rrf"]["doc"]["all"]["hit@20"] >= metrics["lexical"]["doc"]["all"]["hit@20"]
     assert metrics["dense"]["group"]["all"]["hit@1"] >= metrics["dense"]["doc"]["all"]["hit@1"]
-    assert set(report["gates"]) == {"null", "conformal-0.1", "fpir-0.05"}
+    assert set(report["gates"]) >= {"null", "conformal-0.1", "fpir-0.05", "margin-0.05", "mutual-1"}
     assert "not_indexed" in report["attribution"]["counts"]
     assert report["sweep"][0]["floor"] == -math.inf
     assert report["meta"]["levels"] == ["doc", "group"]
@@ -134,3 +134,25 @@ def test_latex_and_per_query_csv(synth_dir, tmp_path, capsys):
     assert len(rows) == 90 and "dense_group_rank" in rows[0] and "gate_x" in rows[0]
     negatives = [row for row in rows if row["negative"] == "1"]
     assert len(negatives) == 30 and negatives[0]["attribution"] == "" and negatives[0]["gate_x"] in ("false_accept", "reject")
+
+
+def test_calibrate_ndcg_objective_and_gates_with_margin_and_mutual(synth_dir, tmp_path, capsys):
+    lanes = [f"--lane={synth_dir / 'lanes' / 'lexical.run'}", f"--lane={synth_dir / 'lanes' / 'dense.run'}"]
+    thresholds = tmp_path / "t.json"
+    assert cli.main(["calibrate", *lanes, "--qrels", str(synth_dir / "qrels-calibration.txt"), "--gate-on", "dense",
+                     "--objective", "ndcg", "--out", str(thresholds)]) == 0
+    out = capsys.readouterr().out
+    cal = load(thresholds)
+    assert cal["fit"]["objective"] == "ndcg" and "operating margin" in out and "mutual nearest neighbour" in out
+    names = [gate["name"] for gate in cal["gates"]]
+    assert "margin-0.05" in names and "mutual-1" in names and all("mutual" in gate for gate in cal["gates"])
+    assert set(cal["mutual"]) == {"1", "3", "5"}
+    report_path = tmp_path / "r.json"
+    assert cli.main(["evaluate", *lanes, "--qrels", str(synth_dir / "qrels.txt"), "--strata", str(synth_dir / "strata.tsv"),
+                     "--thresholds", str(thresholds), "--gate", "manual=0.6", "--mutual", "3", "--quiet",
+                     "--out", str(report_path)]) == 0
+    text = capsys.readouterr().out
+    report = load(report_path)
+    assert report["gates"]["mutual-1"]["mutual"] == 1 and report["gates"]["manual"]["mutual"] == 3
+    assert math.isinf(report["gates"]["margin-0.05"]["floor"]) and report["gates"]["margin-0.05"]["margin"] > 0
+    assert "gates per stratum" in text and set(report["gates"]["null"]["by_stratum"]) >= {"easy", "hard", "negative"}

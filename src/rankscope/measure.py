@@ -67,6 +67,7 @@ def evaluate(
     gates: Sequence[Gate] = (),
     gate_level: str = "doc",
     margin: float = 0.0,
+    mutual: int = 0,
     with_sweep: bool = False,
     resamples: int = 1000,
     seed: int = 0,
@@ -170,5 +171,5 @@ def evaluate(
         for gate in gates:
             report["gates"][gate.name] = evaluate_gate(qrels, gate_rankings, gate, level=gate_level, group_of=group_of)
         if with_sweep:
-            report["sweep"] = sweep(qrels, gate_rankings, margin=margin, level=gate_level, group_of=group_of)
+            report["sweep"] = sweep(qrels, gate_rankings, margin=margin, mutual=mutual, level=gate_level, group_of=group_of)
     return report

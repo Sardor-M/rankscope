@@ -56,17 +56,18 @@ def cmd_evaluate(args) -> int:
     fuse = tuple(part for part in args.fuse.split(",") if part and part != "none")
     if weights and CONVEX not in fuse:
         fuse = (*fuse, CONVEX)
-    gates = [Gate(g["name"], float(g["floor"]), args.margin) for g in (thresholds or {}).get("gates", [])]
+    gates = [Gate(g["name"], float(g["floor"]), float(g.get("margin", args.margin)), int(g.get("mutual", 0)))
+             for g in (thresholds or {}).get("gates", [])]
     for text in args.gate or []:
         name, _, floor = text.partition("=")
-        gates.append(Gate(name, float(floor) if floor else float("-inf"), args.margin))
+        gates.append(Gate(name, float(floor) if floor else float("-inf"), args.margin, args.mutual))
     gate_on = args.gate_on or (thresholds or {}).get("gate_on") or (list(lanes)[-1] if gates else None)
     corpus = read_ids(args.corpus) if args.corpus else None
     report = evaluate(
         lanes, qrels, ks=_ks(args.k), window=args.window, group_of=group_of, fuse=fuse, rrf_k=args.rrf_k,
         weights=weights or None, corpus=corpus, blind=args.blind, gate_on=gate_on, gates=gates,
-        gate_level=args.gate_level, margin=args.margin, with_sweep=args.sweep, resamples=args.resamples,
-        seed=args.seed,
+        gate_level=args.gate_level, margin=args.margin, mutual=args.mutual, with_sweep=args.sweep,
+        resamples=args.resamples, seed=args.seed,
     )
     if args.format == "json":
         print(dumps(report))
@@ -215,7 +216,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--gate-on", help="ranking the floors apply to: a lane, rrf or convex")
     p.add_argument("--gate", action="append", metavar="NAME=FLOOR", help="extra gate (repeatable)")
     p.add_argument("--gate-level", choices=("doc", "group"), default="doc")
-    p.add_argument("--margin", type=float, default=0.0)
+    p.add_argument("--margin", type=float, default=0.0, help="top1 - top2 gap a manual gate requires")
+    p.add_argument("--mutual", type=int, default=0,
+                   help="manual gates also require the query within this rank among the queries retrieving its top doc")
     p.add_argument("--sweep", action="store_true", help="FPIR/FNIR at every observed floor")
     p.add_argument("--resamples", type=int, default=1000,
                    help="bootstrap resamples behind the MRR, recall and nDCG intervals; 0 skips them")
@@ -236,7 +239,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--conservative", action="store_true",
                    help="choose the FPIR floor on the Wilson upper bound rather than the point estimate")
     p.add_argument("--sigmas", type=float, default=3.0)
-    p.add_argument("--objective", choices=("mrr", "hit"), default="mrr")
+    p.add_argument("--objective", choices=("mrr", "hit", "ndcg"), default="mrr",
+                   help="what the fusion weights maximise on the calibration queries")
     p.add_argument("--window", type=int, default=5)
     p.add_argument("--step", type=float, default=0.1)
     p.add_argument("--margin", type=float, default=0.0)

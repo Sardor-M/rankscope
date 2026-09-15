@@ -140,9 +140,23 @@ def render(report: Mapping, *, ci_k: int | None = None, markdown: bool = False, 
         rows = []
         for name, gate in report["gates"].items():
             counts = gate["counts"]
-            rows.append([name, fmt_num(gate["floor"]), fmt_num(gate["margin"], 3), str(counts["accept_correct"]),
-                         str(counts["accept_wrong"]), str(counts["abstain"]), fmt_p(gate["far"]), fmt_p(gate["fnir"])])
-        lines += table(["gate", "floor", "margin", "correct", "wrong", "abstain", "FAR (negatives accepted)", "FNIR (positives missed)"], rows, fmt)
+            rows.append([name, fmt_num(gate["floor"]), fmt_num(gate["margin"], 3), str(gate.get("mutual", 0) or "-"),
+                         str(counts["accept_correct"]), str(counts["accept_wrong"]), str(counts["abstain"]),
+                         fmt_p(gate["far"]), fmt_p(gate["fnir"])])
+        lines += table(["gate", "floor", "margin", "mutual", "correct", "wrong", "abstain", "FAR (negatives accepted)", "FNIR (positives missed)"], rows, fmt)
+        strata = sorted({s for gate in report["gates"].values() for s in gate.get("by_stratum", {})})
+        if len(strata) > 2:
+            lines += _heading("gates per stratum (FAR where the stratum has negatives, FNIR where it has positives)", fmt)
+            rows = []
+            for name, gate in report["gates"].items():
+                for stratum in strata:
+                    entry = gate["by_stratum"].get(stratum)
+                    if not entry:
+                        continue
+                    far = fmt_p(entry["far"]) if entry["far"]["n"] else "-"
+                    fnir = fmt_p(entry["fnir"]) if entry["fnir"]["n"] else "-"
+                    rows.append([name, stratum, far, fnir])
+            lines += table(["gate", "stratum", "FAR", "FNIR"], rows, fmt)
     if report.get("sweep"):
         rows_all = report["sweep"]
         step = max(1, len(rows_all) // 24)
@@ -167,6 +181,13 @@ def render_calibration(cal: Mapping) -> str:
         f"operating floor at FPIR <= {operating['fpir_max']:g}{rule}: {fmt_num(operating['floor'])} -> FPIR {operating['fpir']['p']:.2f} "
         f"(95% up to {operating['fpir']['hi']:.2f}), FNIR {operating['fnir']['p']:.2f} (on the calibration queries)",
     ]
+    if "operating_margin" in cal:
+        om = cal["operating_margin"]
+        lines.append(f"operating margin at FPIR <= {om['fpir_max']:g}{rule}: {fmt_num(om['margin'], 3)} -> FPIR {om['fpir']['p']:.2f}, "
+                     f"FNIR {om['fnir']['p']:.2f} (a pure margin gate, no floor)")
+    if cal.get("mutual"):
+        lines.append("mutual nearest neighbour, no floor: " + " · ".join(
+            f"rank<={r}: FAR {m['far']['p']:.2f}, FNIR {m['fnir']['p']:.2f}" for r, m in cal["mutual"].items()))
     if math.isinf(operating["floor"]) and operating.get("rule") == "wilson-upper":
         lines.append(f"no finite floor bounds FPIR at {operating['fpir_max']:g} on its upper limit with {cal['n']['negatives']} negatives; "
                      f"zero false accepts in at least {negatives_for(operating['fpir_max'])} would")

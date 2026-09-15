@@ -4,17 +4,28 @@ from __future__ import annotations
 
 from typing import Mapping, Sequence
 
+import math
+
 from .fusion import RRF_K, fit_weights, rrf
-from .gate import operating_point, sweep
+from .gate import Gate, evaluate as evaluate_gate, margin_sweep, operating_point, sweep
 from .lanes import Hit, Lane, slice_lanes
 from .measure import CONVEX, RRF, rankings_for
-from .ranks import GroupOf, Qrels, rank_of
+from .metrics import ndcg_at
+from .ranks import GroupOf, Judgment, Qrels, rank_of
 from .stats import conformal_floor, conformal_min_n, null_floor
 
+OBJECTIVES = ("mrr", "hit", "ndcg")
+MUTUAL_RANKS = (1, 3, 5)
 
-def objective_for(relevant, kind: str, window: int):
+
+def objective_for(judgment: Judgment, kind: str, window: int):
+    if kind not in OBJECTIVES:
+        raise ValueError(f"objective must be one of {OBJECTIVES}, not {kind!r}")
+
     def score(fused: list[Hit]) -> float:
-        rank = rank_of(fused, relevant)
+        if kind == "ndcg":
+            return ndcg_at([hit.doc for hit in fused], judgment.grades, window)
+        rank = rank_of(fused, judgment.relevant)
         if kind == "mrr":
             return 1.0 / rank if rank else 0.0
         return 1.0 if 0 < rank <= window else 0.0
@@ -46,7 +57,7 @@ def calibrate(
         raise ValueError("calibration needs both positives and out-of-corpus negatives (judged, nothing relevant)")
 
     per_query = [
-        (slice_lanes(lanes, judgment.query), objective_for(judgment.relevant, objective, window))
+        (slice_lanes(lanes, judgment.query), objective_for(judgment, objective, window))
         for judgment in positives
     ]
     if len(names) > 1:
@@ -77,6 +88,13 @@ def calibrate(
                  "floor": conformal_floor(true_scores, alpha)}
     rows = sweep(qrels, rankings, margin=margin, level=gate_level, group_of=group_of)
     operating = operating_point(rows, fpir, conservative=conservative)
+    margins = margin_sweep(qrels, rankings, level=gate_level, group_of=group_of)
+    operating_margin = operating_point(margins, fpir, conservative=conservative)
+    mutual = {
+        str(r): {key: value for key, value in evaluate_gate(qrels, rankings, Gate("mutual", mutual=r), level=gate_level,
+                                                           group_of=group_of).items() if key in ("far", "fnir", "counts")}
+        for r in MUTUAL_RANKS
+    }
     return {
         "gate_on": gate_on,
         "gate_level": gate_level,
@@ -89,10 +107,14 @@ def calibrate(
         "null": null,
         "conformal": conformal,
         "operating": {"fpir_max": fpir, "rule": "wilson-upper" if conservative else "point", **operating},
+        "operating_margin": {"fpir_max": fpir, "rule": "wilson-upper" if conservative else "point", **operating_margin},
+        "mutual": mutual,
         "gates": [
-            {"name": "null", "floor": null["floor"]},
-            {"name": f"conformal-{alpha:g}", "floor": conformal["floor"]},
-            {"name": f"fpir-{fpir:g}", "floor": operating["floor"]},
+            {"name": "null", "floor": null["floor"], "margin": margin, "mutual": 0},
+            {"name": f"conformal-{alpha:g}", "floor": conformal["floor"], "margin": margin, "mutual": 0},
+            {"name": f"fpir-{fpir:g}", "floor": operating["floor"], "margin": margin, "mutual": 0},
+            {"name": f"margin-{fpir:g}", "floor": -math.inf, "margin": operating_margin["margin"], "mutual": 0},
+            {"name": "mutual-1", "floor": -math.inf, "margin": 0.0, "mutual": 1},
         ],
         "n": {
             "positives": len(positives), "negatives": len(negatives), "null_scores": len(null_scores),
