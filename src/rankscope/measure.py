@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Mapping, Sequence
 
-from .fusion import RRF_K, convex, rrf
+from .fusion import RRF_K, cap_per_group, convex, document_first, rrf
 from .gate import Gate, evaluate as evaluate_gate, sweep
 from .lanes import Hit, Lane, slice_lanes
 from .metrics import DEFAULT_KS, miss_attribution, ndcg_at, proportion, recall_at, summarise
@@ -23,8 +23,9 @@ def rankings_for(
     fuse: Sequence[str] = (RRF,),
     rrf_k: int = RRF_K,
     weights: Mapping[str, float] | None = None,
+    rerank: Mapping | None = None,
 ) -> dict[str, list[Hit]]:
-    """Every ranking a query has: each lane, then the requested fusions."""
+    """Every ranking a query has: each lane, the requested fusions, then the re-ranked variants of one of them."""
     per_lane = slice_lanes(lanes, query)
     every: dict[str, list[Hit]] = dict(per_lane)
     for method in fuse:
@@ -36,6 +37,19 @@ def rankings_for(
             every[CONVEX] = convex(per_lane, weights)
         elif method:
             raise ValueError(f"unknown fusion {method!r}; known: {FUSIONS}")
+    if rerank:
+        base_name = rerank.get("on") or (RRF if RRF in every else list(every)[-1])
+        if base_name not in every:
+            raise ValueError(f"cannot re-rank {base_name!r}; rankings are {list(every)}")
+        group_of = rerank.get("group_of")
+        if group_of is None:
+            raise ValueError("re-ranking needs groups; pass --group-sep or --groups")
+        base = every[base_name]
+        cap = rerank.get("cap")
+        if cap:
+            every[f"{base_name}+cap{cap}"] = cap_per_group(base, group_of, cap)
+        if rerank.get("document_first"):
+            every[f"{base_name}+docfirst"] = document_first(base, group_of, cap_others=cap)
     return every
 
 
@@ -71,6 +85,7 @@ def evaluate(
     with_sweep: bool = False,
     resamples: int = 1000,
     seed: int = 0,
+    rerank: Mapping | None = None,
 ) -> dict:
     """The report: a JSON-able dict. `report.py` renders it; `verdict.py` judges it."""
     lane_names = list(lanes)
@@ -86,7 +101,7 @@ def evaluate(
     n_indexed = 0
 
     for judgment in qrels:
-        every = rankings_for(lanes, judgment.query, fuse=fuse, rrf_k=rrf_k, weights=weights)
+        every = rankings_for(lanes, judgment.query, fuse=fuse, rrf_k=rrf_k, weights=weights, rerank=rerank)
         ranking_names = list(every)
         record: dict = {
             "query": judgment.query, "stratum": judgment.stratum, "negative": judgment.negative, "rankings": {},
@@ -138,6 +153,7 @@ def evaluate(
             "weights": dict(weights or {}),
             "blind": blind,
             "resamples": resamples,
+            "rerank": {k: v for k, v in (rerank or {}).items() if k != "group_of"},
             "depths": {name: lane.depth() for name, lane in lanes.items()},
             "missing_from_lane": {
                 name: sum(1 for judgment in qrels if judgment.query not in lane.hits) for name, lane in lanes.items()

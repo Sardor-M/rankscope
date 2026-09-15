@@ -156,3 +156,18 @@ def test_calibrate_ndcg_objective_and_gates_with_margin_and_mutual(synth_dir, tm
     assert report["gates"]["mutual-1"]["mutual"] == 1 and report["gates"]["manual"]["mutual"] == 3
     assert math.isinf(report["gates"]["margin-0.05"]["floor"]) and report["gates"]["margin-0.05"]["margin"] > 0
     assert "gates per stratum" in text and set(report["gates"]["null"]["by_stratum"]) >= {"easy", "hard", "negative"}
+
+
+def test_rerank_variants(synth_dir, tmp_path, capsys):
+    lanes = [f"--lane={synth_dir / 'lanes' / 'lexical.run'}", f"--lane={synth_dir / 'lanes' / 'dense.run'}"]
+    assert cli.main(["evaluate", *lanes, "--qrels", str(synth_dir / "qrels.txt"), "--group-sep", "#",
+                     "--cap", "3", "--document-first", "--format", "json"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    names = report["meta"]["rankings"]
+    assert "rrf+cap3" in names and "rrf+docfirst" in names and report["meta"]["rerank"]["cap"] == 3
+    assert report["metrics"]["rrf+docfirst"]["group"]["all"]["hit@1"] == report["metrics"]["rrf"]["group"]["all"]["hit@1"]
+    assert cli.main(["evaluate", *lanes, "--qrels", str(synth_dir / "qrels.txt"), "--group-sep", "#",
+                     "--cap", "2", "--rerank-on", "dense", "--format", "json"]) == 0
+    assert "dense+cap2" in json.loads(capsys.readouterr().out)["meta"]["rankings"]
+    with pytest.raises(SystemExit):
+        cli.main(["evaluate", *lanes, "--qrels", str(synth_dir / "qrels.txt"), "--cap", "2", "--quiet"])

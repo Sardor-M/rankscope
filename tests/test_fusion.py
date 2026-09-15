@@ -53,3 +53,19 @@ def test_parse_weights():
     assert f.parse_weights("lexical=0.3, dense=0.7") == {"lexical": 0.3, "dense": 0.7}
     with pytest.raises(ValueError):
         f.parse_weights("lexical")
+
+
+def test_cap_per_group_and_document_first():
+    group_of = lambda doc: doc.split("#")[0]
+    flood = hits("C#1", "C#2", "C#3", "C#4", "C#5", "C#6", "T#t", "C#7", "T#u", scores=[9, 8, 7, 6, 5, 4, 3, 2, 1])
+    capped = f.cap_per_group(flood, group_of, 2)
+    assert [h.doc for h in capped] == ["C#1", "C#2", "T#t", "T#u"]
+    with pytest.raises(ValueError):
+        f.cap_per_group(flood, group_of, 0)
+    right_doc_floods = hits("M#p1", "M#p2", "M#p3", "M#p4", "M#p5", "M#p6", "M#truth", "X#a", scores=[8, 7, 6, 5, 4, 3, 2, 1])
+    assert rank_of(f.cap_per_group(right_doc_floods, group_of, 5), ["M#truth"]) == 0
+    first = f.document_first(right_doc_floods, group_of)
+    assert rank_of(first, ["M#truth"]) == 7 and [h.doc for h in first][-1] == "X#a"
+    mixed = hits("M#p1", "X#a", "M#truth", "X#b", "X#c", scores=[5, 4, 3, 2, 1])
+    assert [h.doc for h in f.document_first(mixed, group_of, cap_others=1)] == ["M#p1", "M#truth", "X#a"]
+    assert f.document_first([], group_of) == []

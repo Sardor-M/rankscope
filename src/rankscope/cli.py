@@ -63,11 +63,16 @@ def cmd_evaluate(args) -> int:
         gates.append(Gate(name, float(floor) if floor else float("-inf"), args.margin, args.mutual))
     gate_on = args.gate_on or (thresholds or {}).get("gate_on") or (list(lanes)[-1] if gates else None)
     corpus = read_ids(args.corpus) if args.corpus else None
+    rerank = None
+    if args.cap or args.document_first:
+        if group_of is None:
+            raise SystemExit("--cap and --document-first need --group-sep or --groups")
+        rerank = {"on": args.rerank_on, "cap": args.cap, "document_first": args.document_first, "group_of": group_of}
     report = evaluate(
         lanes, qrels, ks=_ks(args.k), window=args.window, group_of=group_of, fuse=fuse, rrf_k=args.rrf_k,
         weights=weights or None, corpus=corpus, blind=args.blind, gate_on=gate_on, gates=gates,
         gate_level=args.gate_level, margin=args.margin, mutual=args.mutual, with_sweep=args.sweep,
-        resamples=args.resamples, seed=args.seed,
+        resamples=args.resamples, seed=args.seed, rerank=rerank,
     )
     if args.format == "json":
         print(dumps(report))
@@ -211,6 +216,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--fuse", default="rrf", help="comma list of rrf, convex, or none")
     p.add_argument("--weights", help="name=w,name=w or a thresholds JSON from `calibrate`")
     p.add_argument("--corpus", help="one indexed doc id per line; enables not_indexed attribution")
+    p.add_argument("--cap", type=int, help="add a variant with at most N hits per group (needs groups)")
+    p.add_argument("--document-first", action="store_true",
+                   help="add a variant that keeps the top hit's whole group first, then the rest (needs groups)")
+    p.add_argument("--rerank-on", help="ranking the variants are built from (default: rrf, else the last lane)")
     p.add_argument("--blind", help="stratum treated as the label-less class")
     p.add_argument("--thresholds", help="thresholds JSON from `calibrate`: weights, gate_on, floors")
     p.add_argument("--gate-on", help="ranking the floors apply to: a lane, rrf or convex")

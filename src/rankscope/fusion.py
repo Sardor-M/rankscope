@@ -74,6 +74,32 @@ def fit_weights(
     return best[0], best[1], table
 
 
+def cap_per_group(hits: Sequence[Hit], group_of: Callable[[str], str], cap: int) -> list[Hit]:
+    """At most `cap` hits per group, in the original order: stops one group flooding the top of the list."""
+    if cap <= 0:
+        raise ValueError("cap must be positive")
+    seen: dict[str, int] = {}
+    kept = []
+    for hit in hits:
+        group = group_of(hit.doc)
+        if seen.get(group, 0) < cap:
+            seen[group] = seen.get(group, 0) + 1
+            kept.append(hit)
+    return kept
+
+
+def document_first(hits: Sequence[Hit], group_of: Callable[[str], str], cap_others: int | None = None) -> list[Hit]:
+    """Decide the group first, then order within it: the group of the top hit comes whole, the rest follow, capped."""
+    if not hits:
+        return []
+    winner = group_of(hits[0].doc)
+    inside = [hit for hit in hits if group_of(hit.doc) == winner]
+    others = [hit for hit in hits if group_of(hit.doc) != winner]
+    if cap_others is not None:
+        others = cap_per_group(others, group_of, cap_others)
+    return inside + others
+
+
 def parse_weights(text: str) -> dict[str, float]:
     """`lexical=0.3,dense=0.7` -> a weight mapping."""
     weights = {}
