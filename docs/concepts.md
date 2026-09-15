@@ -35,9 +35,10 @@ recall@k = |relevant ∩ top k| / |relevant|      the fraction of relevant docum
 nDCG@k   = DCG@k / ideal DCG@k, gain 2^grade - 1, discount 1/log2(rank + 1)
 ```
 
-`hit@k` is a proportion, so it gets a Wilson interval. `recall@k` and `nDCG@k` are means
-of per-query values; compare them across systems with the paired bootstrap (`compare`).
-The two recalls coincide when every query has one relevant document.
+`hit@k` is a proportion, so it gets a Wilson interval. `recall@k`, `nDCG@k` and MRR are means
+of per-query values; the report gives the headline ones a percentile bootstrap interval
+(`--resamples`, 1000 draws by default) and `compare` tests two systems with the paired
+bootstrap. The two recalls coincide when every query has one relevant document.
 
 ## Strata
 
@@ -183,6 +184,14 @@ replacement 10 000 times, average the deltas each time, and read off the 95 perc
 interval and P(delta > 0). `compare` calls it better only when P >= 0.95 and the mean delta
 clears a minimum effect size you choose, because with enough queries a delta of 0.001
 becomes "significant" and still means nothing.
+
+## Diffs (`diff.py`)
+
+Two reports on the same qrels, before and after a change: every metric present in both
+is listed with its delta and a verdict. A change is `improved` or `regressed` only when the
+two intervals do not overlap; otherwise it is `within noise`, and `no interval` when a
+metric carries none. Non-overlapping 95 percent intervals is a conservative test, which is
+the right default for a gate that can block a merge.
 
 ## Verdicts (`verdict.py`)
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 (2026-09-15)
+
+- `.json` lanes and qrels in the `{query: {doc: score}}` and `{query: {doc: grade}}`
+  convention pytrec_eval and BEIR use; `Lane.from_dict`, `Lane.to_dict`, `Qrels.from_dict`.
+- Bootstrap intervals on MRR, recall at the deepest k and nDCG at 10, per stratum, shown
+  inline and stored as `<metric>_ci`; `--resamples` (default 1000, 0 to skip) and `--seed`.
+- `diff`: what moved between two reports, judged on interval overlap; `--fail-on-regression`
+  for CI.
+- `evaluate --format latex` and `--per-query FILE.csv`.
+
 ## 0.2.0 (2026-09-10)
 
 - `sweep` is linear in the number of queries: scores are sorted once and each floor is a

@@ -67,6 +67,14 @@ expect, and on the Wilson upper bound with `--conservative`, because that is wha
 bound actually requires. When the upper bound never reaches the target the floor is
 +inf and the report names the negative count that would change that.
 
+## Headline intervals only, by default
+
+A bootstrap interval on every mean metric for every stratum and ranking would multiply
+the report's cost by the resample count; on thousands of queries that is minutes. The
+report gives intervals to MRR, recall at the deepest k and nDCG at 10, which are the
+columns the tables show, with 1000 draws. `--resamples 0` skips them; `summarise` takes
+`ci_metrics` for anyone who wants more.
+
 ## Verdicts on point and on interval
 
 A rules file judged only on point estimates rewards small samples; judged only on

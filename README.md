@@ -71,10 +71,11 @@ receives candidates from every lane, which is why a gate exists.
 
 | Command | What it does |
 | :--- | :--- |
-| `evaluate` | Metrics per lane and per fusion, miss attribution, negatives, gates. Text, Markdown or JSON output. |
+| `evaluate` | Metrics per lane and per fusion, miss attribution, negatives, gates. Text, Markdown, LaTeX or JSON output, plus a per-query CSV. |
 | `calibrate` | Fits fusion weights and three abstain floors on a separate calibration set and writes `thresholds.json`. `--conservative` picks the FPIR floor on the Wilson upper bound. |
 | `compare` | Paired bootstrap of one metric between two rankings, with a minimum effect size. |
 | `verdict` | Judges a report against rules written before the run. Exits 1 on failure, so it fits in CI. |
+| `diff` | What moved between two reports, per metric, judged on whether the intervals overlap. `--fail-on-regression` for CI. |
 | `fuse` | Writes a fused TREC run (reciprocal rank fusion, or weighted) from several lanes. |
 | `synth` | Generates lanes, judgments, strata and negatives with known truth, for learning and testing. |
 | `goldens` | Writes or checks the reference vectors that other implementations use to prove parity. |
@@ -103,10 +104,11 @@ and reported on the same queries is optimism, not measurement.
 
 ## Inputs
 
-- **Lanes**: TREC run files (`qid Q0 docid rank score tag`), or JSONL. One file per
-  retrieval system; pass several with repeated `--lane`.
-- **Judgments**: TREC qrels (`qid 0 docid grade`), or JSONL. A query whose grades are all
-  zero counts as a **negative**: the corpus holds no answer for it. Extra negatives can be
+- **Lanes**: TREC run files (`qid Q0 docid rank score tag`), JSONL, or `.json` in the
+  `{query: {doc: score}}` convention pytrec_eval and BEIR use. One file per retrieval
+  system; pass several with repeated `--lane`.
+- **Judgments**: TREC qrels (`qid 0 docid grade`), JSONL, or `.json` as `{query: {doc:
+  grade}}`. A query whose grades are all zero counts as a **negative**: the corpus holds no answer for it. Extra negatives can be
   listed with `--negatives`.
 - **Strata** (optional): a `query<TAB>label` file. Tables are reported per label.
 - **Groups** (optional): `--group-sep '#'` reads `acme-manual#p12` as document
@@ -136,14 +138,16 @@ report = evaluate(lanes, qrels, ks=(1, 5), group_of=group_by_separator("#"))
 print(render(report, ci_k=5))
 ```
 
-`evaluate` returns a plain dictionary, the same JSON the CLI writes. `calibrate`,
+`evaluate` returns a plain dictionary, the same JSON the CLI writes. `Lane.from_dict` and
+`Qrels.from_dict` take the `{query: {doc: value}}` shape directly. `calibrate`,
 `paired_bootstrap`, `rrf`, `convex`, `wilson`, `null_floor`, `conformal_quantile` and
 `rank_of` are importable on their own. Two runnable scripts live in `examples/`.
 
 ## The ideas behind it
 
-- **Intervals on proportions.** Zero false accepts in three negatives bounds the rate at
-  56 percent, not at zero. Wilson intervals say so on every line.
+- **Intervals on everything reported.** Zero false accepts in three negatives bounds the
+  rate at 56 percent, not at zero. Wilson intervals say so on every hit rate; MRR, recall
+  and nDCG carry bootstrap intervals; `diff` calls a change real only when intervals part.
 - **Two rank levels.** Right document and right passage are different failures with
   different fixes.
 - **Miss attribution in a window.** The window is what the next stage sees (a reranker's
@@ -184,7 +188,7 @@ python -m build
 
 ## Status
 
-Version 0.2.0. The arithmetic is tested and cross-checked against the JavaScript port; the
+Version 0.3.0. The arithmetic is tested and cross-checked against the JavaScript port; the
 command-line surface may still change before 1.0. Not included yet: mutual nearest
 neighbour gates, per-group caps with document-first re-ranking, and significance tests
 other than the paired bootstrap.

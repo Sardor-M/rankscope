@@ -1,6 +1,6 @@
 # Tutorial: the internals, one module at a time
 
-Thirteen lessons. Each names the module to read, a command to run, a question the output
+Fourteen lessons. Each names the module to read, a command to run, a question the output
 answers, and an exercise that changes something. Commands assume `pip install -e ".[dev]"`
 and `rankscope synth --out data/synth` from the repository root. Numbers quoted are for the
 default seed; yours will match until you change the generator.
@@ -51,6 +51,10 @@ rankscope evaluate --lane data/synth/lanes/lexical.run --lane data/synth/lanes/d
 Question: the `easy` stratum has 24 queries and the `hard` stratum 14. Compare the width
 of their hit@20 intervals. What would you need to make the hard interval as narrow as the
 easy one?
+
+Question: the MRR and nDCG cells carry an interval in brackets. Where does it come from,
+and why is it not a Wilson interval? (`--resamples 0` removes it; `--resamples 10000`
+tightens the estimate of the interval, not the interval itself.)
 
 Exercise: run `rankscope synth --queries 12 --negatives 4 --out data/tiny` and evaluate it.
 Then compute `wilson(0, 3)` by hand from the formula in `docs/concepts.md` and check it
@@ -186,6 +190,21 @@ Exercise: change `Z_95` in `stats.py` to 1.960001, regenerate the goldens, and w
 JavaScript check fail on the Wilson lines. Revert. Then port `minmax` and `convex` to
 `rankscope.mjs`, add golden lines for them in `goldens.py`, and make both checks pass. The
 ordering rule (score descending, doc id ascending) is the part that bites.
+
+## 14. Diffs in CI (`diff.py`)
+
+```sh
+rankscope evaluate ... --out before.json
+rankscope evaluate ... --depth 5 --out after.json
+rankscope diff --before before.json --after after.json --fail-on-regression
+```
+
+Question: which rows are `regressed` and which are `within noise`? Cutting every lane to
+five changes hit@20 by construction; does it change hit@5?
+
+Exercise: put a `diff` step in a CI job that evaluates every pull request against a stored
+baseline report. Decide, before you see a failure, whether a regression on one stratum
+should block a merge.
 
 ## Where to go next
 
