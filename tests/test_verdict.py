@@ -26,3 +26,27 @@ def test_judge_and_overall():
     assert v.overall(v.judge(REPORT, [{"name": "r", "path": "metrics.dense.doc.hard.hit@20", "op": ">=", "threshold": 0.9}])).startswith("FAIL")
     with pytest.raises(ValueError):
         v.judge(REPORT, [{"name": "x", "path": "gates.fpir-0.05.far", "op": "==", "threshold": 1}])
+
+
+def test_relative_rules_compare_two_paths():
+    report = {"metrics": {
+        "rrf": {"doc": {"all": {"hit@5": 0.63, "hit@5_ci": [0.51, 0.74]}}},
+        "dense": {"doc": {"all": {"hit@5": 0.85, "hit@5_ci": [0.74, 0.92]}}},
+        "lexical": {"doc": {"all": {"hit@5": 0.35, "hit@5_ci": [0.24, 0.47]}}},
+    }}
+    rows = v.judge(report, [
+        {"name": "fusion beats lexical", "path": "metrics.rrf.doc.all.hit@5", "op": ">=",
+         "against": "metrics.lexical.doc.all.hit@5", "threshold": 0.03},
+        {"name": "fusion keeps dense", "path": "metrics.rrf.doc.all.hit@5", "op": ">=",
+         "against": "metrics.dense.doc.all.hit@5"},
+        {"name": "fusion within 0.3 of dense", "path": "metrics.rrf.doc.all.hit@5", "op": "<=",
+         "against": "metrics.lexical.doc.all.hit@5", "threshold": 0.3},
+    ])
+    assert rows[0]["point"] and rows[0]["interval"] and rows[0]["other"] == 0.35
+    assert not rows[1]["point"] and not rows[1]["interval"]
+    assert rows[2]["point"] and not rows[2]["interval"]
+    assert v.overall(rows).startswith("FAIL")
+    from rankscope.report import render_verdict
+
+    text = render_verdict(rows, v.overall(rows))
+    assert "0.63 vs 0.35" in text and ">= other +0.03" in text

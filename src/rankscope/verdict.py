@@ -33,13 +33,27 @@ def resolve(report: Mapping, path: str) -> tuple[float, float | None, float | No
 
 
 def judge(report: Mapping, rules: Sequence[Mapping]) -> list[dict]:
+    """Absolute rules compare a path with a threshold; relative rules (`against`) compare two paths plus a margin."""
     rows = []
     for rule in rules:
         op = rule["op"]
         if op not in OPS:
             raise ValueError(f"op must be one of {OPS}, not {op!r}")
-        threshold = float(rule["threshold"])
         value, lo, hi = resolve(report, rule["path"])
+        if "against" in rule:
+            other, other_lo, other_hi = resolve(report, rule["against"])
+            margin = float(rule.get("threshold", 0.0))
+            if op == ">=":
+                point = value >= other + margin
+                interval = lo is not None and other_hi is not None and lo >= other_hi + margin
+            else:
+                point = value <= other + margin
+                interval = hi is not None and other_lo is not None and hi <= other_lo + margin
+            rows.append({"name": rule["name"], "path": rule["path"], "against": rule["against"], "op": op,
+                         "threshold": margin, "value": value, "lo": lo, "hi": hi, "other": other,
+                         "other_lo": other_lo, "other_hi": other_hi, "point": point, "interval": interval})
+            continue
+        threshold = float(rule["threshold"])
         if op == ">=":
             point, interval = value >= threshold, lo is not None and lo >= threshold
         else:

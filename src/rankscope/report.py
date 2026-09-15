@@ -201,8 +201,15 @@ def render_verdict(rows: Sequence[Mapping], summary: str, markdown: bool = False
     body = []
     for row in rows:
         ci = f"{row['lo']:.2f}-{row['hi']:.2f}" if row["lo"] is not None else "-"
-        body.append([row["name"], f"{row['op']} {row['threshold']:.2f}", f"{row['value']:.2f}", ci,
-                     "pass" if row["point"] else "FAIL", "pass" if row["interval"] else "open"])
+        if "against" in row:
+            threshold = f"{row['op']} other {row['threshold']:+.2f}"
+            measured = f"{row['value']:.2f} vs {row['other']:.2f}"
+            if row["other_lo"] is not None:
+                ci += f" vs {row['other_lo']:.2f}-{row['other_hi']:.2f}"
+        else:
+            threshold, measured = f"{row['op']} {row['threshold']:.2f}", f"{row['value']:.2f}"
+        body.append([row["name"], threshold, measured, ci, "pass" if row["point"] else "FAIL",
+                     "pass" if row["interval"] else "open"])
     lines = table(["gate", "threshold", "measured", "95% CI", "point", "interval"], body, markdown)
     return "\n".join(lines + ["", f"verdict: {summary}"])
 
