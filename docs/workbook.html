@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rankscope Workbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --ground: #f4f6f9; --surface: #ffffff; --surface-2: #eaeef4; --line: #d3d9e2;
+  --ink: #141a22; --ink-2: #4f5a68; --ink-3: #7d8795;
+  --accent: #2a78d6; --accent-ink: #ffffff; --accent-soft: #e2edfa;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --good: #0ca30c; --bad: #d03b3b; --warn: #b45309;
+  --grid: #e3e7ed; --mid: #f0efec;
+  --display: "Libre Franklin", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #101318; --surface: #171b21; --surface-2: #1f252d; --line: #303844;
+    --ink: #edf0f4; --ink-2: #aeb6c2; --ink-3: #7f8896;
+    --accent: #3987e5; --accent-ink: #0b1220; --accent-soft: #1b2a3f;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --good: #0ca30c; --bad: #e66767; --warn: #f59e0b;
+    --grid: #262d37; --mid: #383835;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #101318; --surface: #171b21; --surface-2: #1f252d; --line: #303844;
+  --ink: #edf0f4; --ink-2: #aeb6c2; --ink-3: #7f8896;
+  --accent: #3987e5; --accent-ink: #0b1220; --accent-soft: #1b2a3f;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --good: #0ca30c; --bad: #e66767; --warn: #f59e0b;
+  --grid: #262d37; --mid: #383835;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.55; }
+a { color: var(--accent); }
+.shell { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 0; min-height: 100vh; }
+.rail { position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; padding: 28px 20px; border-right: 1px solid var(--line); background: var(--surface); font-family: var(--display); }
+.rail h1 { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 4px; color: var(--ink-2); }
+.rail .sub { font-family: var(--body); font-size: 14px; color: var(--ink-3); margin: 0 0 16px; }
+.progress { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.progress > div { height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+.progress-label { font-size: 12px; color: var(--ink-3); margin-bottom: 18px; font-variant-numeric: tabular-nums; }
+.toc { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.toc a { display: flex; gap: 10px; align-items: baseline; padding: 6px 8px; border-radius: 6px; color: var(--ink-2); text-decoration: none; font-size: 13.5px; line-height: 1.3; }
+.toc a:hover, .toc a:focus-visible { background: var(--surface-2); color: var(--ink); outline: none; }
+.toc a .n { font-family: var(--mono); font-size: 11px; color: var(--ink-3); min-width: 18px; }
+.toc a.done .n { color: var(--good); }
+main { padding: 40px 56px 96px; max-width: 1040px; }
+.masthead { margin-bottom: 44px; }
+.masthead .eyebrow { font-family: var(--display); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.masthead h1 { font-family: var(--display); font-size: clamp(34px, 5vw, 52px); line-height: 1.02; font-weight: 800; margin: 8px 0 14px; text-wrap: balance; letter-spacing: -.01em; }
+.masthead p { max-width: 66ch; font-size: 18px; color: var(--ink-2); margin: 0 0 12px; }
+.lesson { padding: 36px 0 12px; border-top: 1px solid var(--line); }
+.lesson h2 { font-family: var(--display); font-size: 27px; font-weight: 700; margin: 0 0 6px; letter-spacing: -.01em; text-wrap: balance; }
+.lesson h2 .n { font-family: var(--mono); font-size: 13px; color: var(--ink-3); font-weight: 400; margin-right: 10px; vertical-align: middle; }
+.lesson .reads { font-family: var(--display); font-size: 12.5px; color: var(--ink-3); letter-spacing: .04em; margin-bottom: 18px; }
+.lesson p, .lesson li { max-width: 68ch; }
+.lesson h3 { font-family: var(--display); font-size: 16px; margin: 26px 0 8px; letter-spacing: .01em; }
+code, pre { font-family: var(--mono); font-size: 13.5px; }
+code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+pre { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; line-height: 1.5; max-width: 100%; }
+pre code { background: none; padding: 0; }
+.formula { font-family: var(--mono); font-size: 14px; background: var(--surface); border-left: 3px solid var(--accent); padding: 10px 14px; margin: 14px 0; overflow-x: auto; white-space: pre; }
+.lab { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px 22px; margin: 22px 0; }
+.lab .lab-title { font-family: var(--display); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 12px; display: flex; gap: 10px; align-items: center; }
+.lab .lab-title::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.controls { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: flex-end; margin-bottom: 14px; }
+.control { display: flex; flex-direction: column; gap: 4px; font-family: var(--display); font-size: 12px; color: var(--ink-2); letter-spacing: .03em; }
+.control input[type=range] { width: 180px; accent-color: var(--accent); }
+.control input[type=text], .control input[type=number], .control select, textarea { font-family: var(--mono); font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.control input[type=number] { width: 90px; }
+.control .val { font-family: var(--mono); font-size: 13px; color: var(--ink); }
+textarea { width: 100%; min-height: 120px; resize: vertical; line-height: 1.45; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+button { font-family: var(--display); font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 7px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+table.data { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+table.data th { font-family: var(--display); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); font-weight: 700; text-align: right; }
+table.data th:first-child, table.data td:first-child { text-align: left; }
+table.data tr.hi td { background: var(--accent-soft); }
+table.data td.good { color: var(--good); font-weight: 600; }
+table.data td.bad { color: var(--bad); font-weight: 600; }
+.tablewrap { overflow-x: auto; }
+.stat-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+.stat { background: var(--surface-2); border-radius: 8px; padding: 10px 14px; min-width: 150px; }
+.stat .k { font-family: var(--display); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.stat .v { font-family: var(--mono); font-size: 20px; font-weight: 600; margin-top: 2px; }
+.stat .v small { font-size: 12px; color: var(--ink-3); font-weight: 400; }
+.note { font-size: 15px; color: var(--ink-2); font-style: italic; }
+.warnbox { border-left: 3px solid var(--warn); background: var(--surface-2); padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 15px; margin: 12px 0; }
+svg.chart { width: 100%; height: auto; display: block; }
+svg.chart text { font-family: var(--display); font-size: 11px; fill: var(--ink-2); }
+svg.chart .axis { stroke: var(--line); }
+svg.chart .gridline { stroke: var(--grid); }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-family: var(--display); font-size: 12px; color: var(--ink-2); margin: 6px 0 2px; }
+.legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; background: var(--c); }
+.tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--ground); font-family: var(--mono); font-size: 12px; padding: 6px 8px; border-radius: 6px; display: none; z-index: 10; white-space: nowrap; }
+.check { margin: 20px 0 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.check summary { cursor: pointer; padding: 12px 16px; font-family: var(--display); font-weight: 700; font-size: 14px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.check summary::after { content: "+"; font-family: var(--mono); color: var(--ink-3); }
+.check[open] summary::after { content: "−"; }
+.check .body { padding: 0 16px 14px; }
+.check ol { padding-left: 20px; }
+.check li { margin-bottom: 8px; }
+.check details { margin-top: 4px; }
+.check details summary { padding: 2px 0; font-size: 13px; font-weight: 500; color: var(--accent); }
+.check details summary::after { content: ""; }
+.check .answer { font-size: 15px; color: var(--ink-2); padding: 4px 0 2px 8px; border-left: 2px solid var(--line); }
+.done-row { display: flex; align-items: center; gap: 10px; padding-top: 10px; border-top: 1px dashed var(--line); margin-top: 12px; font-family: var(--display); font-size: 13px; }
+.done-row input { accent-color: var(--good); width: 16px; height: 16px; }
+.vocab { display: grid; grid-template-columns: 140px 1fr; gap: 4px 16px; font-size: 15px; max-width: 72ch; }
+.vocab dt { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 600; }
+.vocab dd { margin: 0; color: var(--ink-2); }
+.pill { display: inline-block; font-family: var(--display); font-size: 11px; font-weight: 700; letter-spacing: .05em; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); }
+.pill.good { background: var(--good); color: #fff; } .pill.bad { background: var(--bad); color: #fff; } .pill.warn { background: var(--warn); color: #fff; }
+.diagram { overflow-x: auto; margin: 16px 0; }
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; }
+  .rail { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 24px 18px 64px; }
+}
+@media (prefers-reduced-motion: reduce) { .progress > div { transition: none; } }
+</style>
+
+</head>
+<body>
+<div class="tip" id="tip"></div>
+<div class="shell">
+<nav class="rail" aria-label="Lessons">
+  <h1>Rankscope Workbook</h1>
+  <p class="sub">Seventeen lessons, each with a live instrument.</p>
+  <div class="progress"><div id="progress-bar"></div></div>
+  <div class="progress-label" id="progress-label">0 of 17 lessons marked done</div>
+  <ul class="toc" id="toc"></ul>
+</nav>
+
+<main>
+<header class="masthead">
+  <div class="eyebrow">rankscope · learning edition</div>
+  <h1>Look inside a retrieval ranking</h1>
+  <p>Every idea in rankscope, from a rank with a level to a pre-registered verdict, as a number you can move with a slider. Each lesson explains one module, gives you an instrument that recomputes as you change its inputs, and ends with questions whose answers stay hidden until you have tried.</p>
+  <p class="note">The arithmetic on this page is the same kernel the package ships (0.4.0); lesson 14 shows it producing the reference vectors line for line.</p>
+</header>
+
+<!-- ───────────── 0 ───────────── -->
+<section class="lesson" id="l0">
+  <h2><span class="n">00</span>Orientation: the questions after the metric</h2>
+  <div class="reads">read · orientation, no instrument</div>
+  <p>A search system, a RAG retriever, or a "find the matching document" feature produces a ranked list. Teams summarise it with one number, say recall@10 = 0.53, and decide from that. rankscope exists because that number hides four things: whether it is stable, which class of query fails, which component found each answer, and whether the system should have said "not found". Everything below is an instrument for one of those.</p>
+  <div class="diagram"><svg class="chart" viewBox="0 0 900 190" role="img" aria-label="Pipeline: lanes and qrels flow into ranks, then metrics, attribution, fusion, gate and verdict">
+    <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"/></marker></defs>
+    <g font-family="var(--display)">
+      <rect x="10" y="30" width="130" height="54" rx="8" fill="var(--surface-2)" stroke="var(--line)"/><text x="75" y="52" text-anchor="middle" fill="var(--ink)" font-weight="700">lanes</text><text x="75" y="70" text-anchor="middle">TREC runs, JSONL</text>
+      <rect x="10" y="110" width="130" height="54" rx="8" fill="var(--surface-2)" stroke="var(--line)"/><text x="75" y="132" text-anchor="middle" fill="var(--ink)" font-weight="700">qrels</text><text x="75" y="150" text-anchor="middle">grades, negatives, strata</text>
+      <path d="M140,57 L200,90" stroke="var(--ink-3)" fill="none" marker-end="url(#arr)"/><path d="M140,137 L200,104" stroke="var(--ink-3)" fill="none" marker-end="url(#arr)"/>
+      <rect x="205" y="70" width="120" height="54" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="265" y="92" text-anchor="middle" fill="var(--ink)" font-weight="700">ranks</text><text x="265" y="110" text-anchor="middle">doc · group</text>
+      <path d="M325,97 L375,97" stroke="var(--ink-3)" fill="none" marker-end="url(#arr)"/>
+      <rect x="380" y="10" width="140" height="44" rx="8" fill="var(--surface-2)" stroke="var(--line)"/><text x="450" y="37" text-anchor="middle" fill="var(--ink)">metrics + intervals</text>
+      <rect x="380" y="66" width="140" height="44" rx="8" fill="var(--surface-2)" stroke="var(--line)"/><text x="450" y="93" text-anchor="middle" fill="var(--ink)">miss attribution</text>
+      <rect x="380" y="122" width="140" height="44" rx="8" fill="var(--surface-2)" stroke="var(--line)"/><text x="450" y="149" text-anchor="middle" fill="var(--ink)">fusion (rrf, convex)</text>
+      <path d="M520,88 L575,88" stroke="var(--ink-3)" fill="none" marker-end="url(#arr)"/>
+      <rect x="580" y="66" width="120" height="44" rx="8" fill="var(--surface-2)" stroke="var(--line)"/><text x="640" y="93" text-anchor="middle" fill="var(--ink)">gate: accept / none</text>
+      <path d="M700,88 L755,88" stroke="var(--ink-3)" fill="none" marker-end="url(#arr)"/>
+      <rect x="760" y="66" width="130" height="44" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="825" y="93" text-anchor="middle" fill="var(--ink)" font-weight="700">verdict</text>
+    </g></svg></div>
+  <h3>Vocabulary</h3>
+  <dl class="vocab">
+    <dt>lane</dt><dd>one retrieval system's ranked output for every query. A TREC run file is a lane.</dd>
+    <dt>qrels</dt><dd>graded relevance judgments. A query judged with no positive grade is a <b>negative</b>: the corpus holds no answer for it.</dd>
+    <dt>doc / group</dt><dd>two levels of "right": the exact passage, or any passage of the right document.</dd>
+    <dt>stratum</dt><dd>a label per query, so tables can show the class an average hides.</dd>
+    <dt>window</dt><dd>how many candidates the next stage sees. Attribution is measured inside it.</dd>
+    <dt>floor</dt><dd>a score below which the top hit is not evidence that the answer exists.</dd>
+  </dl>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>Why is a query with all-zero grades treated as a negative rather than as "unjudged"?<details><summary>answer</summary><div class="answer">Because someone looked and found nothing relevant. That is information: the correct output is "not found". A query with no qrels rows at all is unjudged and is ignored, which is the TREC convention.</div></details></li>
+    <li>Name a system where the window is 5 and one where it is 40.<details><summary>answer</summary><div class="answer">A verifier shown five crops, or a reranker fed five candidates, has window 5. A reader that stuffs forty passages into a prompt has window 40. Attribution must be measured at the window the next stage actually sees.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l0" id="done-l0"><label for="done-l0">I can explain the four questions and the vocabulary</label></div></div></details>
+</section>
+
+<!-- ───────────── 1 ───────────── -->
+<section class="lesson" id="l1">
+  <h2><span class="n">01</span>Lanes and judgments</h2>
+  <div class="reads">module · lanes.py, ranks.Qrels</div>
+  <p>A TREC run line is <code>qid Q0 docid rank score tag</code>. rankscope orders the hits of a query by score, descending, breaking ties on the doc id, exactly as trec_eval does; the rank column is not trusted. A qrels line is <code>qid 0 docid grade</code>. Edit either box and the parsed view updates.</p>
+  <div class="lab"><div class="lab-title">Instrument · parse a run and its qrels</div>
+    <div class="grid2">
+      <div><div class="control">bm25.run<textarea id="run-bm25"></textarea></div></div>
+      <div><div class="control">dense.run<textarea id="run-dense"></textarea></div></div>
+    </div>
+    <div class="control" style="margin-top:12px">qrels.txt<textarea id="qrels" style="min-height:90px"></textarea></div>
+    <div id="lab1-out" style="margin-top:12px"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>In the bm25 box, move <code>press-guide#p7</code> for q4 to the first line but keep its score 3.2. Where does it land?<details><summary>answer</summary><div class="answer">Still last: order comes from the score column, not from line order or the rank column.</div></details></li>
+    <li>Add a line <code>q9 Q0 acme-manual#p02 1 5.0 bm25</code>. What happens to q9?<details><summary>answer</summary><div class="answer">It is counted as unjudged and ignored, because q9 has no qrels row. To make it a negative, give it a qrels row with grade 0.</div></details></li>
+    <li>Delete every q3 line from the dense box. What does the parser say, and why does rankscope refuse to stay silent about it?<details><summary>answer</summary><div class="answer">"Judged but missing from a lane: dense 1." The query is scored as a miss for that lane, which is the right score, but a run file with a bug looks identical to a bad retriever unless the count is printed. Since 0.2.0 the report header carries it.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l1" id="done-l1"><label for="done-l1">I can read a run file and a qrels file</label></div></div></details>
+</section>
+
+<!-- ───────────── 2 ───────────── -->
+<section class="lesson" id="l2">
+  <h2><span class="n">02</span>A rank has a level</h2>
+  <div class="reads">module · ranks.rank_of, group_by_separator</div>
+  <p><code>rank_of</code> returns the 1-based position of the first relevant hit, and <b>0 for a miss</b>. Zero is a sentinel: every consumer tests <code>0 &lt; r &lt;= k</code>. With a group function, the same ranking has a second rank: the first hit whose group contains a relevant document. Group level answers "right document?"; doc level answers "right passage inside it?". They fail differently and want different fixes.</p>
+  <div class="lab"><div class="lab-title">Instrument · doc rank and group rank, from the data above</div>
+    <div class="controls"><label class="control">group separator<input type="text" id="sep" value="#" size="3"></label></div>
+    <div id="lab2-out"></div>
+    <p class="note" style="margin:10px 0 0">Highlighted rows are found at group level but missed at doc level: the lane reached the right document and ranked the wrong part of it.</p>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>Which fix does a group hit with a doc miss call for?<details><summary>answer</summary><div class="answer">Re-ranking inside the document the lane already found (or accepting at document level), not more retrieval. A group miss is retrieval, coverage or absence.</div></details></li>
+    <li>Change the separator to <code>-</code>. What happens to the group column and why?<details><summary>answer</summary><div class="answer">Every doc becomes its own group (the ids have no dash before the separator would split), so the group rank equals the doc rank. The group function defines what "same document" means; choose it from your id convention.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l2" id="done-l2"><label for="done-l2">I can explain doc level versus group level</label></div></div></details>
+</section>
+
+<!-- ───────────── 3 ───────────── -->
+<section class="lesson" id="l3">
+  <h2><span class="n">03</span>hit@k, recall@k, MRR and nDCG</h2>
+  <div class="reads">module · metrics.py</div>
+  <p>Four metrics, four different questions. <code>hit@k</code>: did any relevant document make the top k. <code>recall@k</code>: what fraction of the relevant documents did. <code>MRR</code>: how deep is the first one. <code>nDCG@k</code>: how good is the whole top k, weighting graded relevance by position. hit@k is a proportion and gets a Wilson interval; the others are means, so the report gives them a percentile bootstrap interval (lesson 12 shows the machinery), and two systems are compared with a paired bootstrap.</p>
+  <div class="formula">gain(rank) = 2^grade − 1        discount(rank) = 1 / log2(rank + 1)
+DCG@k = Σ gain · discount over the top k        nDCG@k = DCG@k / DCG@k of the ideal ordering</div>
+  <div class="lab"><div class="lab-title">Instrument · one query, every metric, every term shown</div>
+    <div class="controls">
+      <label class="control">ranking (best first)<input type="text" id="m-rank" value="x, a, b, y, c" size="28"></label>
+      <label class="control">grades doc:grade<input type="text" id="m-grades" value="a:2, b:1, c:1" size="22"></label>
+      <label class="control">k <span class="val" id="m-k-val">5</span><input type="range" id="m-k" min="1" max="10" value="5"></label>
+    </div>
+    <div id="lab3-out"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>Set the ranking to <code>c, b, a</code> with the same grades. Why is nDCG below 1 even though every relevant document is in the top 3?<details><summary>answer</summary><div class="answer">The ideal order puts the grade-2 document first. nDCG rewards ordering, not presence; recall@3 is 1.0 and hit@3 is 1.0, nDCG is not.</div></details></li>
+    <li>When do hit@k and recall@k coincide?<details><summary>answer</summary><div class="answer">When a query has exactly one relevant document. Most single-answer benchmarks are in that case, which is why the two are often confused.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l3" id="done-l3"><label for="done-l3">I can compute nDCG by hand</label></div></div></details>
+</section>
+
+<!-- ───────────── 4 ───────────── -->
+<section class="lesson" id="l4">
+  <h2><span class="n">04</span>The Wilson interval and the rule of three</h2>
+  <div class="reads">module · stats.wilson, rule_of_three, negatives_for</div>
+  <p>A hit rate of 8 out of 12 is not "67 percent". It is "somewhere between 39 and 86 percent". The Wilson score interval says so without collapsing to zero width at 0 or n out of n, which the textbook normal approximation does. After zero events in n trials the upper limit is z²/(n+z²), which is where the table of "how many negatives do I need" comes from.</p>
+  <div class="formula">p = s/n,  z = 1.96
+centre = (p + z²/2n) / (1 + z²/n)
+half   = z · √( p(1−p)/n + z²/4n² ) / (1 + z²/n)
+interval = [centre − half, centre + half], clipped to [0, 1]</div>
+  <div class="lab"><div class="lab-title">Instrument · move s and n</div>
+    <div class="controls">
+      <label class="control">successes s <span class="val" id="w-s-val">8</span><input type="range" id="w-s" min="0" max="12" value="8"></label>
+      <label class="control">trials n <span class="val" id="w-n-val">12</span><input type="range" id="w-n" min="1" max="500" value="12"></label>
+      <label class="control">bound to claim after zero events<input type="number" id="w-bound" value="0.05" step="0.01" min="0.001" max="0.5"></label>
+    </div>
+    <div id="lab4-out"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>Set s = 0, n = 3. What is the most you can say about the false-accept rate?<details><summary>answer</summary><div class="answer">That it is at most about 56 percent. Zero of three is almost no evidence; the rule of three gives 3/3 = 100 percent, Wilson is a little tighter.</div></details></li>
+    <li>How many negatives with zero false accepts do you need to claim a rate at or below 2 percent?<details><summary>answer</summary><div class="answer">189 by Wilson (z²·0.98/0.02), 150 by the rule of three. Type 0.02 in the bound box to see it computed.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l4" id="done-l4"><label for="done-l4">I can size a negative set for a claim</label></div></div></details>
+</section>
+
+<!-- ───────────── 5 ───────────── -->
+<section class="lesson" id="l5">
+  <h2><span class="n">05</span>Strata: what the average hides</h2>
+  <div class="reads">module · metrics.summarise, the --strata and --blind options</div>
+  <p>A stratum is a label per query. rankscope reports every table per stratum and overall, because a mean can be respectable while one class of query is at zero. The stratum you name with <code>--blind</code> is the one the attribution block singles out: how many of a lane's misses fall in it.</p>
+  <div class="lab"><div class="lab-title">Instrument · hits per stratum, and the overall row that hides them</div>
+    <div class="tablewrap"><table class="data" id="strata-table"><thead><tr><th>stratum</th><th>queries</th><th>hits within k</th><th>hit rate</th><th>95% interval</th></tr></thead><tbody></tbody></table></div>
+    <div class="controls" style="margin-top:12px"><label class="control" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="strata-collapse"> show only the overall row</label></div>
+    <div id="lab5-out"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>With the default numbers the overall hit rate is above 0.5. Which stratum is at zero, and what decision would the overall number alone have led to?<details><summary>answer</summary><div class="answer">The hard stratum: 0 of 14. Reading only the overall row you would have called the lane acceptable and shipped a component that fails a third of the traffic.</div></details></li>
+    <li>Why should strata come from labels rather than from the query text alone?<details><summary>answer</summary><div class="answer">A label-derived stratum (for example, queries sharing no term with their relevant document) is a measurement. A query-derived proxy has to be validated against labelled data before it is allowed to gate anything.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l5" id="done-l5"><label for="done-l5">I always look at the per-stratum rows</label></div></div></details>
+</section>
+
+<!-- ───────────── 6 ───────────── -->
+<section class="lesson" id="l6">
+  <h2><span class="n">06</span>Miss attribution: whose fault is a miss</h2>
+  <div class="reads">module · metrics.miss_attribution, the --window and --corpus options</div>
+  <p>For each positive, given every lane's doc rank and the window: a relevant document absent from the corpus is <code>not_indexed</code> (coverage; no lane can help). No lane inside the window is <code>not_surfaced</code> (retrieval). Otherwise the label names the lanes that carried it. The share of positives a new lane surfaces that no other lane does is the number that says whether it earns its place.</p>
+  <div class="lab"><div class="lab-title">Instrument · ranks per lane, a corpus flag, and a window</div>
+    <div class="controls"><label class="control">window <span class="val" id="att-w-val">5</span><input type="range" id="att-w" min="1" max="20" value="5"></label></div>
+    <div class="tablewrap"><table class="data" id="att-table"><thead><tr><th>query</th><th>indexed</th><th>lexical rank</th><th>dense rank</th><th>attribution</th></tr></thead><tbody></tbody></table></div>
+    <div id="lab6-out"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>Set the window to 20. Which labels change, and why is "not surfaced at 5, hit@20 0.8" not a contradiction?<details><summary>answer</summary><div class="answer">Rows with ranks between 6 and 20 move from not_surfaced to surfaced. They measure different windows: hit@20 asks whether the lane found it at all, attribution asks whether the next stage would have seen it.</div></details></li>
+    <li>Why are not_indexed queries excluded from the not-surfaced share?<details><summary>answer</summary><div class="answer">Their fix is indexing, not ranking. Counting them as retrieval misses would blame the lanes for a coverage gap and hide the real not-surfaced rate.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l6" id="done-l6"><label for="done-l6">I can attribute a miss to a cause</label></div></div></details>
+</section>
+
+<!-- ───────────── 7 ───────────── -->
+<section class="lesson" id="l7">
+  <h2><span class="n">07</span>Reciprocal rank fusion, and what it dilutes</h2>
+  <div class="reads">module · fusion.rrf</div>
+  <div class="formula">score(doc) = Σ over lanes where doc appears at rank r of  1 / (k + r)        k = 60 by default</div>
+  <p>Presence in two lanes beats being first in one: rank 1 in a single lane scores 1/61 ≈ 0.0164, while ranks 3 and 5 in two lanes score 1/63 + 1/65 ≈ 0.0313. That is the point of RRF and also its cost: a lane's confident-wrong top hits can dilute another lane's correct top hit. Small k trusts the top of each lane; large k trusts presence. The instrument opens on exactly that case.</p>
+  <div class="lab"><div class="lab-title">Instrument · two lanes, one k</div>
+    <div class="controls">
+      <label class="control">lexical (best first)<input type="text" id="rrf-a" value="p, x, q, r" size="30"></label>
+      <label class="control">dense (best first)<input type="text" id="rrf-b" value="truth, x, y" size="30"></label>
+      <label class="control">k <span class="val" id="rrf-k-val">60</span><input type="range" id="rrf-k" min="1" max="200" value="60"></label>
+      <label class="control">depth, both lanes cut to <span class="val" id="rrf-d-val">10</span><input type="range" id="rrf-d" min="1" max="10" value="10"></label>
+    </div>
+    <div id="lab7-out"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>At k = 60, <code>truth</code> is rank 1 in dense and absent from lexical, yet <code>x</code> wins the fusion. Show the two numbers.<details><summary>answer</summary><div class="answer">truth: 1/61 = 0.01639. x: 1/62 + 1/62 = 0.03226. Two mediocre positions beat one first place.</div></details></li>
+    <li>Cut the depth to 1. Which documents vanish from the fusion, and why does rankscope now print each lane's depth in the header and offer <code>--depth</code>?<details><summary>answer</summary><div class="answer">Everything below rank 1 in either lane. RRF over a 20-deep lane and a 100-deep lane is a different function from RRF over equal depths: a document below a lane's depth is absent from it and scores nothing there. Uniform depth makes lanes comparable; the header warns when they differ.</div></details></li>
+    <li>Lower k until truth wins. Roughly where does it flip, and what does that say about k?<details><summary>answer</summary><div class="answer">Not until k is tiny: 1/(k+1) versus 2/(k+2) only favours truth when k &lt; 0, so with x at rank 2 in both lanes truth never wins by k alone. Move x to rank 3 in one lane and the flip appears around small k. The lesson: k reshapes how much rank matters versus presence, but it cannot undo agreement between lanes.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l7" id="done-l7"><label for="done-l7">I can compute an RRF score and predict a dilution</label></div></div></details>
+</section>
+
+<!-- ───────────── 8 ───────────── -->
+<section class="lesson" id="l8">
+  <h2><span class="n">08</span>Convex fusion, and fitting weights without lying</h2>
+  <div class="reads">module · fusion.minmax, convex, fit_weights · calibrate.py</div>
+  <p>Each lane's scores are min-max normalised over its own list (absent document = 0, constant list = all ones), then summed with weights on the simplex. <code>calibrate</code> walks a grid of weight vectors and keeps the one with the best mean objective over the <b>calibration</b> queries. The instrument fits on one synthetic query set and evaluates on another, then lets you cheat.</p>
+  <div class="lab"><div class="lab-title">Instrument · grid fit on calibration queries, evaluation on held-out queries</div>
+    <div class="controls">
+      <label class="control">calibration queries <span class="val" id="fit-n-val">40</span><input type="range" id="fit-n" min="5" max="200" value="40"></label>
+      <label class="control">dense lane quality <span class="val" id="fit-q-val">0.75</span><input type="range" id="fit-q" min="0.3" max="0.95" step="0.05" value="0.75"></label>
+      <label class="control">seed<input type="number" id="fit-seed" value="1" min="0" max="999"></label>
+      <label class="control" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="fit-cheat"> fit on the held-out set too (the forbidden number)</label>
+    </div>
+    <div id="lab8-out"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>Tick the cheat box. Which number moves, and in which direction, and why is it always that direction?<details><summary>answer</summary><div class="answer">The held-out objective rises, because the weights were chosen to maximise it on those very queries. Selection on the reporting set can only flatter; that is why calibrate and evaluate read different files.</div></details></li>
+    <li>Set calibration queries to 5. What happens to the fitted weight across seeds?<details><summary>answer</summary><div class="answer">It jumps around. A grid of eleven candidates fitted on five queries picks a winner by noise; the held-out number tells you how much.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l8" id="done-l8"><label for="done-l8">I never fit and report on the same queries</label></div></div></details>
+</section>
+
+<!-- ───────────── 9 ───────────── -->
+<section class="lesson" id="l9">
+  <h2><span class="n">09</span>The null floor</h2>
+  <div class="reads">module · stats.null_floor</div>
+  <p>Run the negatives, the queries whose answer is not in the corpus, and record the best score each one reaches. Over those n maxima, <code>floor = mean + 3·std</code>. A top score below the floor is relative evidence only: it orders candidates but says nothing about whether the answer exists. The floor is a property of the negatives you fed it, which is the whole lesson: negatives from another domain give a floor that looks safe and is not.</p>
+  <div class="lab"><div class="lab-title">Instrument · sample negatives and true matches, then read the floor</div>
+    <div class="controls">
+      <button id="nf-hard">preset: hard negatives</button><button id="nf-easy">preset: easy negatives</button>
+      <label class="control">negatives n <span class="val" id="nf-n-val">60</span><input type="range" id="nf-n" min="3" max="400" value="60"></label>
+      <label class="control">negatives best-score mean <span class="val" id="nf-nm-val">0.66</span><input type="range" id="nf-nm" min="0.3" max="0.9" step="0.01" value="0.66"></label>
+      <label class="control">negatives std <span class="val" id="nf-ns-val">0.05</span><input type="range" id="nf-ns" min="0.01" max="0.15" step="0.01" value="0.05"></label>
+      <label class="control">true-match mean <span class="val" id="nf-tm-val">0.72</span><input type="range" id="nf-tm" min="0.3" max="0.95" step="0.01" value="0.72"></label>
+      <label class="control">true-match std <span class="val" id="nf-ts-val">0.08</span><input type="range" id="nf-ts" min="0.01" max="0.2" step="0.01" value="0.08"></label>
+      <label class="control">seed<input type="number" id="nf-seed" value="3" min="0" max="999"></label>
+    </div>
+    <div class="legend"><span style="--c:var(--s2)">negatives, best score</span><span style="--c:var(--s1)">positives, true-match score</span><span style="--c:var(--ink)">floor = mean + 3·std</span></div>
+    <div id="lab9-chart"></div>
+    <div id="lab9-out"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>Press the hard preset. Where does the floor land relative to the true matches, and what does that mean for this score?<details><summary>answer</summary><div class="answer">Above most of them: FNIR is high while FAR is near zero. This score cannot serve as absolute evidence on these negatives; something else (text, a margin, a verifier) must carry "not found".</div></details></li>
+    <li>Press the easy preset, then imagine deploying that floor against the hard negatives. What happens?<details><summary>answer</summary><div class="answer">The floor is lower, so a large share of hard negatives clear it: false accepts. Calibrate on negatives that resemble the positives you will face.</div></details></li>
+    <li>Set n = 3. Why does rankscope print n beside every floor?<details><summary>answer</summary><div class="answer">Three maxima give a standard deviation with almost no information; the floor is arithmetic, not evidence. With n = 0 the floor is +inf: fail closed.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l9" id="done-l9"><label for="done-l9">I can say what a null floor assumes</label></div></div></details>
+</section>
+
+<!-- ───────────── 10 ───────────── -->
+<section class="lesson" id="l10">
+  <h2><span class="n">10</span>The conformal floor, and how few is too few</h2>
+  <div class="reads">module · stats.conformal_quantile, conformal_min_n, conformal_floor</div>
+  <div class="formula">nonconformity = −score of each calibration true match
+q = the ⌈(n + 1)(1 − α)⌉-th smallest nonconformity        floor = −q
+P(new true match scores ≥ floor) ≥ 1 − α, for exchangeable data</div>
+  <p>A finite-sample guarantee on misses, with one catch: when the index exceeds n there is no finite threshold with that guarantee. rankscope returns +inf (a floor of −inf: accept everything, decide nothing) instead of quietly using the sample minimum, whose coverage is only n/(n+1). And a conformal floor bounds misses; it says nothing about false accepts.</p>
+  <div class="lab"><div class="lab-title">Instrument · the index, the small-n regime, and a coverage simulation</div>
+    <div class="controls">
+      <label class="control">α <span class="val" id="cf-a-val">0.10</span><input type="range" id="cf-a" min="0.01" max="0.5" step="0.01" value="0.10"></label>
+      <label class="control">calibration n <span class="val" id="cf-n-val">12</span><input type="range" id="cf-n" min="1" max="60" value="12"></label>
+      <button id="cf-sim" class="primary">simulate coverage, 1000 trials</button>
+    </div>
+    <div id="lab10-out"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>At α = 0.1, for which n is the floor exactly the smallest calibration score?<details><summary>answer</summary><div class="answer">n from 9 to 18: the index equals n. Below 9 there is no finite bound; from 19 the floor is the second smallest.</div></details></li>
+    <li>Run the simulation at n = 8 and n = 40. What does each observed miss rate say?<details><summary>answer</summary><div class="answer">At n = 8 the floor is −inf, so the miss rate is 0: the guarantee holds trivially and uselessly. At n = 40 the miss rate sits near α, sometimes above, sometimes below: the guarantee is marginal over calibration sets.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l10" id="done-l10"><label for="done-l10">I know what the conformal floor bounds and what it does not</label></div></div></details>
+</section>
+
+<!-- ───────────── 11 ───────────── -->
+<section class="lesson" id="l11">
+  <h2><span class="n">11</span>The gate: FNIR at a fixed FPIR</h2>
+  <div class="reads">module · gate.decide, evaluate, sweep, operating_point</div>
+  <div class="formula">no candidates → abstain      top score &lt; floor → abstain      top − second &lt; margin → abstain      else accept the top hit
+FAR (FPIR) = false accepts / negatives          FNIR = (wrong accepts + abstains) / positives</div>
+  <p>A wrong accept counts as a miss, the 1:N identification convention. <code>sweep</code> evaluates every floor the observed top scores suggest, in linear time: the scores a floor alone would decide are sorted once and each floor is a bisection, so a sweep over thousands of queries takes a fraction of a second rather than the twenty seconds a re-evaluation per floor did. <code>operating_point</code> picks the lowest floor whose FPIR is within a target, on the point estimate or, with <code>--conservative</code>, on the Wilson upper bound. Picked on calibration negatives it is a threshold; picked on the negatives you report it is tuning. The curve below uses the samples from lesson 9.</p>
+  <p>Two more conditions live in the same gate. The <b>margin</b> is the gap between the top score and the runner-up; <code>margin_sweep</code> does for that gap what the floor sweep does for the score, and <code>calibrate</code> writes an operating margin beside the operating floor. A lone candidate has an infinite gap and passes every margin, which is why a margin alone cannot drive FPIR to zero. <b>Mutual nearest neighbour</b> reads the ranking in the other direction: from the lanes, rankscope builds, for every document, the queries that retrieved it, best first; a gate with <code>mutual = r</code> accepts only when the query is within the top r of that list for its own top document. It is cheap, needs no scores to be comparable across queries, and is vacuous on a tiny query set.</p>
+  <div class="lab"><div class="lab-title">Instrument · the FPIR / FNIR trade-off curve</div>
+    <div class="controls">
+      <label class="control">floor <span class="val" id="g-floor-val">0.80</span><input type="range" id="g-floor" min="0.2" max="1.0" step="0.005" value="0.80"></label>
+      <label class="control">FPIR target<input type="number" id="g-target" value="0.05" step="0.01" min="0" max="1"></label>
+      <label class="control" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="g-cons"> conservative: judge FPIR on its Wilson upper bound</label>
+    </div>
+    <div class="legend"><span style="--c:var(--s1)">sweep: FNIR against FPIR, one point per floor</span><span style="--c:var(--s2)">chosen floor</span></div>
+    <div id="lab11-chart"></div>
+    <div id="lab11-out"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>Why is the curve read from calibration negatives and then applied to held-out negatives?<details><summary>answer</summary><div class="answer">Choosing the floor on the negatives you report lets the sample's noise pick the threshold and the reported FAR is then optimistic. The held-out FAR at a pre-chosen floor is the measurement.</div></details></li>
+    <li>With 30 negatives, what is the smallest non-zero FPIR you can observe?<details><summary>answer</summary><div class="answer">1/30 ≈ 3.3 percent. Claiming FPIR ≤ 2 percent needs zero false accepts in at least 150 to 189 negatives (lesson 4).</div></details></li>
+    <li>Why can a margin gate never reject a query whose lane returned a single candidate, and what does that imply for the sweep's last row?<details><summary>answer</summary><div class="answer">The gap to a non-existent runner-up is infinite, so it clears any finite margin. The last row of the margin sweep, at margin = infinity, still accepts those queries; if some are negatives, FPIR does not reach zero by margin alone and a floor is needed as well.</div></details></li>
+    <li>Tick conservative with 60 negatives and a target of 0.05. Why is there no floor, and what changes if you set the negatives slider to 80?<details><summary>answer</summary><div class="answer">Zero false accepts in 60 only bounds FPIR at 6 percent on the Wilson upper limit, above the target, so no finite floor can honestly promise 5 percent. At 73 or more negatives the bound drops below 5 percent and a finite floor appears. The point estimate would have handed you a floor either way; the bound tells you what you can actually claim.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l11" id="done-l11"><label for="done-l11">I can read a DET-style curve and choose an operating point honestly</label></div></div></details>
+</section>
+
+<!-- ───────────── 12 ───────────── -->
+<section class="lesson" id="l12">
+  <h2><span class="n">12</span>Paired bootstrap: is B really better than A?</h2>
+  <div class="reads">module · stats.paired_bootstrap · the compare command</div>
+  <p>Two systems scored on the same queries give one delta per query. Resample the queries with replacement, average the deltas each time, and read the 95 percent interval and P(delta &gt; 0). rankscope calls it better only when P ≥ 0.95 <b>and</b> the mean delta clears a minimum effect size you choose, because with enough queries a delta of 0.001 becomes "significant" and still means nothing. Pairing removes query difficulty as a noise source; the toggle shows how much.</p>
+  <div class="lab"><div class="lab-title">Instrument · simulate two systems and resample</div>
+    <div class="controls">
+      <label class="control">queries <span class="val" id="pb-n-val">40</span><input type="range" id="pb-n" min="5" max="400" value="40"></label>
+      <label class="control">true delta <span class="val" id="pb-d-val">0.05</span><input type="range" id="pb-d" min="-0.1" max="0.3" step="0.01" value="0.05"></label>
+      <label class="control">per-query noise <span class="val" id="pb-s-val">0.15</span><input type="range" id="pb-s" min="0" max="0.5" step="0.01" value="0.15"></label>
+      <label class="control">minimum effect<input type="number" id="pb-min" value="0.02" step="0.01" min="0" max="1"></label>
+      <label class="control" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="pb-unpaired"> resample the two systems independently (unpaired)</label>
+      <label class="control">seed<input type="number" id="pb-seed" value="7" min="0" max="999"></label>
+    </div>
+    <div class="legend"><span style="--c:var(--s1)">bootstrap distribution of the mean delta</span><span style="--c:var(--ink)">zero</span></div>
+    <div id="lab12-chart"></div>
+    <div id="lab12-out"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>Tick unpaired. What happens to the interval, and why?<details><summary>answer</summary><div class="answer">It widens: query difficulty now varies between the two resamples, adding variance the pairing had cancelled. The paired test is strictly more sensitive when both systems answer the same queries.</div></details></li>
+    <li>Set true delta to 0.01, queries to 400, minimum effect to 0.02. P(better) is high; is B better?<details><summary>answer</summary><div class="answer">Statistically distinguishable, practically not: the delta is below the minimum effect you set. The verdict says not shown better, and that is the right reading.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l12" id="done-l12"><label for="done-l12">I can run and read a paired bootstrap</label></div></div></details>
+</section>
+
+<!-- ───────────── 13 ───────────── -->
+<section class="lesson" id="l13">
+  <h2><span class="n">13</span>Pre-registered verdicts</h2>
+  <div class="reads">module · verdict.py · the gates.json rules file</div>
+  <p>A rule is a dotted path into the report, <code>&gt;=</code> or <code>&lt;=</code>, and a threshold. It passes on the <b>point</b> when the value clears the threshold and on the <b>interval</b> when the conservative end of the Wilson interval does. A rule may instead name a second path with <code>against</code>: "fusion hit@5 must be at least the best single lane's hit@5", judged on the interval only when the two intervals do not overlap, so a new baseline never invalidates a hard-coded number. Write the rules before the run and commit them. The instrument judges a small report; edit the thresholds and watch the two columns disagree.</p>
+  <div class="lab"><div class="lab-title">Instrument · rules against a report</div>
+    <div class="tablewrap"><table class="data" id="v-table"><thead><tr><th>rule</th><th>path</th><th>op</th><th>threshold</th><th>measured</th><th>95% interval</th><th>point</th><th>interval</th></tr></thead><tbody></tbody></table></div>
+    <div id="lab13-out"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>All rules pass on the point and one is open on the interval. When is deciding on points acceptable?<details><summary>answer</summary><div class="answer">When being wrong is cheap and reversible, and the direction is what you need. When a false pass costs a shipped failure, require the interval or collect more queries first.</div></details></li>
+    <li>You saw the number and then lowered a threshold so it passes. What did you just do?<details><summary>answer</summary><div class="answer">Turned a measurement into a decoration. The file's history in version control is the only thing that makes a threshold a commitment.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l13" id="done-l13"><label for="done-l13">I write the rules before the run</label></div></div></details>
+</section>
+
+<!-- ───────────── 14 ───────────── -->
+<section class="lesson" id="l14">
+  <h2><span class="n">14</span>Goldens: parity across implementations</h2>
+  <div class="reads">module · goldens.py · reference/js/rankscope.mjs</div>
+  <p><code>rankscope goldens</code> writes reference vectors, one line per case, in the form <code>kind args -&gt; answer</code>. Another implementation prints the same lines with its own answers and <code>rankscope goldens --check</code> diffs them numerically with a tolerance of 1e-9. This page carries a JavaScript port of the kernel; the box below is that port computing the lines live. If the numbers here ever disagree with the file the package writes, one of the two is wrong.</p>
+  <div class="lab"><div class="lab-title">Instrument · golden lines computed by this page</div>
+    <pre id="lab14-out"></pre>
+    <button id="copy-goldens">copy these lines</button> <span class="note" id="copy-note"></span>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>Why is the tolerance 1e-9 and not exact string equality?<details><summary>answer</summary><div class="answer">Different languages format floats differently and may sum in a different order. A numeric tolerance below any value that could change a decision catches real drift without failing on formatting.</div></details></li>
+    <li>What does the conformal line with eight values prove?<details><summary>answer</summary><div class="answer">That both implementations agree on the small-n rule: eight calibration scores at α = 0.1 give inf, not the minimum.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l14" id="done-l14"><label for="done-l14">I can explain how parity is proven</label></div></div></details>
+</section>
+
+<!-- ───────────── 15 ───────────── -->
+<section class="lesson" id="l15">
+  <h2><span class="n">15</span>Putting it together on the command line</h2>
+  <div class="reads">read · the workflow</div>
+  <pre><code># 1. fit weights and floors on a development set
+rankscope calibrate --lane bm25.run --lane dense.run --qrels qrels-dev.txt --gate-on dense --depth 100 --conservative --out thresholds.json
+
+# 2. report on the test set, strata and the blind class named
+rankscope evaluate --lane bm25.run --lane dense.run --qrels qrels-test.txt --thresholds thresholds.json \
+    --strata strata.tsv --blind no-overlap --format markdown --out report.json
+
+# 3. judge against rules you committed before running
+rankscope verdict --report report.json --gates gates.json
+
+# 4. is fusion better than the lexical lane alone?
+rankscope compare --lane bm25.run --lane dense.run --qrels qrels-test.txt --candidate rrf --metric ndcg@10 --min-delta 0.02
+
+# 5. in CI: did anything regress beyond noise since the stored baseline?
+rankscope diff --before baseline.json --after report.json --fail-on-regression
+
+# variants and conditions: a per-group cap, document-first ordering, a mutual-nearest-neighbour gate
+rankscope evaluate --lane bm25.run --lane dense.run --qrels qrels-test.txt --group-sep '#' --cap 5 --document-first --mutual 3
+
+# lanes and qrels may also be .json in the {query: {doc: score}} shape pytrec_eval and BEIR use;
+# --format latex pastes into a paper, --per-query rows.csv opens in a spreadsheet</code></pre>
+  <p>Order matters: calibrate on one file, evaluate on another, judge against a file that predates both. <code>--depth</code> cuts every lane to the same depth before anything is computed, and <code>--conservative</code> makes the FPIR floor a claim you can defend. The report's first number to read is not a metric. It is the share of positives your new lane surfaces that no existing lane does, and right after it, the count of judged queries missing from any lane.</p>
+  <details class="check"><summary>Final check</summary><div class="body"><ol>
+    <li>Your dense lane raises hit@10 from 0.44 to 0.52 on 27 queries. List what you need before believing it.<details><summary>answer</summary><div class="answer">The Wilson intervals on both (they overlap heavily at n = 27), a paired bootstrap on the same queries, the per-stratum rows, and attribution showing what the dense lane surfaced that BM25 did not. Then a larger query set.</div></details></li>
+    <li>A pull request moves nDCG@10 from 0.337 to 0.331 on 46 queries. Is that a regression?<details><summary>answer</summary><div class="answer">Not on its own. <code>diff</code> calls a change regressed only when the two bootstrap intervals do not overlap; at n = 46 they overlap by a wide margin, so the verdict is "within noise" and the merge should not be blocked on it.</div></details></li>
+    <li>Your product must answer "not in your documents". What do you need that most benchmarks do not have?<details><summary>answer</summary><div class="answer">Judged negatives that resemble the positives, enough of them to bound the false-accept rate you promise, and a floor calibrated on them rather than on foreign-domain queries.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l15" id="done-l15"><label for="done-l15">I can run the four commands and read their output</label></div></div></details>
+</section>
+
+<!-- ───────────── 16 ───────────── -->
+<section class="lesson" id="l16">
+  <h2><span class="n">16</span>Caps and document-first re-ranking</h2>
+  <div class="reads">module · fusion.cap_per_group, document_first · evaluate --cap, --document-first</div>
+  <p>A catalogue with sixty near-identical pages floods the top of a fused list, because its pages share vocabulary and style. A per-group cap keeps at most N hits per group and stops the flood. But a cap applied across groups also removes the right item when the right group is the flooder: a long manual ranks six of its own pages above its one right page, and a cap of five cuts the right page out. Document-first ordering decides the group first, keeps the top hit's whole group in its original order, and caps only the others. rankscope adds both as variants beside the ranking they came from, so the report shows what each rule costs and buys at doc and at group level.</p>
+  <div class="lab"><div class="lab-title">Instrument · one ranking, a cap, and document-first</div>
+    <div class="controls">
+      <label class="control" style="flex:1;min-width:320px">ranking, best first, as group#item<input type="text" id="rr-list" value="M#p1, M#p2, M#p3, M#p4, M#p5, M#p6, M#truth, X#a, Y#b, X#c, X#d" style="width:100%"></label>
+      <label class="control">relevant item<input type="text" id="rr-truth" value="M#truth" size="10"></label>
+      <label class="control">cap per group <span class="val" id="rr-cap-val">5</span><input type="range" id="rr-cap" min="1" max="10" value="5"></label>
+    </div>
+    <div id="lab16-out"></div>
+  </div>
+  <details class="check"><summary>Check yourself</summary><div class="body"><ol>
+    <li>With the default list, the cap of five removes the relevant item. Why, and which of the two rules keeps it?<details><summary>answer</summary><div class="answer">The right group M holds the six items above the truth, so a cap applied across groups drops M's seventh item, which is the truth. Document-first keeps all of M first and caps only X and Y, so the truth stays at rank 7 and the group is still decided correctly at rank 1.</div></details></li>
+    <li>Move <code>X#a</code> to the front of the list. What does document-first do now, and is that a failure of the rule?<details><summary>answer</summary><div class="answer">It decides the group X first and pushes the whole of M behind X's items; the truth's doc rank gets worse. That is the rule working as designed: it trusts the top hit's group. When the top hit is wrong at group level, deciding the group first cannot help, which is why group-level recall at 1 is the number to check before turning it on.</div></details></li>
+  </ol><div class="done-row"><input type="checkbox" data-done="l16" id="done-l16"><label for="done-l16">I know when a cap helps and when document-first is needed</label></div></div></details>
+</section>
+</main>
+</div>
+
+<script>
+(function () {
+"use strict";
+// ───────────── kernel (the same arithmetic as the package) ─────────────
+const Z = 1.96;
+const mean = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
+const sampleStd = a => { const n = a.length; if (n < 2) return 0; const m = mean(a); return Math.sqrt(a.reduce((s, v) => s + (v - m) ** 2, 0) / (n - 1)); };
+function wilson(s, n, z = Z) { if (n <= 0) return [0, 0]; const p = s / n, d = 1 + z * z / n; const c = (p + z * z / (2 * n)) / d; const h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d; return [Math.max(0, c - h), Math.min(1, c + h)]; }
+function wald(s, n, z = Z) { if (n <= 0) return [0, 0]; const p = s / n, h = z * Math.sqrt(p * (1 - p) / n); return [Math.max(0, p - h), Math.min(1, p + h)]; }
+const ruleOfThree = n => n > 0 ? 3 / n : 1;
+function negativesFor(b) { let n = 1; while (wilson(0, n)[1] > b) n++; return n; }
+function nullFloor(scores, sig = 3) { if (!scores.length) return { n: 0, mean: 0, std: 0, floor: Infinity }; const m = mean(scores), s = sampleStd(scores); return { n: scores.length, mean: m, std: s, floor: m + sig * s }; }
+const conformalIndex = (n, a) => Math.ceil((n + 1) * (1 - a));
+function conformalMinN(a) { let n = 1; while (conformalIndex(n, a) > n) n++; return n; }
+function conformalQuantile(v, a) { const s = [...v].sort((x, y) => x - y); const n = s.length, i = conformalIndex(n, a); if (!n || i > n) return Infinity; return s[i - 1]; }
+const conformalFloor = (scores, a) => -conformalQuantile(scores.map(s => -s), a);
+const hitRate = (r, k) => r.length ? r.filter(x => x > 0 && x <= k).length / r.length : 0;
+const mrr = r => r.length ? r.reduce((s, x) => s + (x > 0 ? 1 / x : 0), 0) / r.length : 0;
+function recallAt(docs, rel, k) { const w = new Set(rel); if (!w.size) return 0; return docs.slice(0, k).filter(d => w.has(d)).length / w.size; }
+function ndcgAt(docs, grades, k) { let dcg = 0; docs.slice(0, k).forEach((d, i) => { const g = 2 ** (grades[d] || 0) - 1; if (g) dcg += g / Math.log2(i + 2); }); const ideal = Object.values(grades).filter(g => g > 0).sort((a, b) => b - a).slice(0, k); let idcg = 0; ideal.forEach((g, i) => { idcg += (2 ** g - 1) / Math.log2(i + 2); }); return idcg ? dcg / idcg : 0; }
+function rrf(lanes, k = 60) { const sc = new Map(); for (const hits of lanes) hits.forEach((d, i) => sc.set(d, (sc.get(d) || 0) + 1 / (k + i + 1))); return [...sc.entries()].sort((a, b) => b[1] !== a[1] ? b[1] - a[1] : (a[0] < b[0] ? -1 : 1)).map(([doc, score]) => ({ doc, score })); }
+function minmax(v) { if (!v.length) return []; const lo = Math.min(...v), hi = Math.max(...v); return hi === lo ? v.map(() => 1) : v.map(x => (x - lo) / (hi - lo)); }
+function convex(lanes, weights) { const f = new Map(); for (const [name, hits] of Object.entries(lanes)) { const w = weights[name] || 0; const nm = minmax(hits.map(h => h.score)); hits.forEach((h, i) => f.set(h.doc, (f.get(h.doc) || 0) + w * nm[i])); } return [...f.entries()].sort((a, b) => b[1] !== a[1] ? b[1] - a[1] : (a[0] < b[0] ? -1 : 1)).map(([doc, score]) => ({ doc, score })); }
+function rankOf(hits, rel, level = "doc", groupOf = null) { let w = new Set(rel); if (level === "group") w = new Set([...w].map(groupOf)); for (let i = 0; i < hits.length; i++) { const key = level === "doc" ? hits[i].doc : groupOf(hits[i].doc); if (w.has(key)) return i + 1; } return 0; }
+function missAttribution(indexed, ranks, w) { if (!indexed) return "not_indexed"; const c = Object.entries(ranks).filter(([, r]) => r > 0 && r <= w).map(([l]) => l).sort(); return c.length ? "surfaced_by_" + c.join("+") : "not_surfaced"; }
+function mulberry(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function gauss(rng) { let u = 0, v = 0; while (u === 0) u = rng(); while (v === 0) v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+// ───────────── helpers ─────────────
+const $ = id => document.getElementById(id);
+const f2 = x => x.toFixed(2), f3 = x => x.toFixed(3), f4 = x => x.toFixed(4);
+const pct = x => (x * 100).toFixed(0) + "%";
+const fmtInf = x => x === Infinity ? "inf" : x === -Infinity ? "-inf" : f4(x);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+function prop(k, n) { const [lo, hi] = wilson(k, n); return `${k}/${n} = ${pct(n ? k / n : 0)} (95% ${pct(lo)}–${pct(hi)})`; }
+function stat(k, v, small) { return `<div class="stat"><div class="k">${k}</div><div class="v">${v}${small ? ` <small>${small}</small>` : ""}</div></div>`; }
+function bindRange(id, valId, fn, fmt = x => x) { const el = $(id); const upd = () => { if (valId) $(valId).textContent = fmt(parseFloat(el.value)); fn(); }; el.addEventListener("input", upd); return upd; }
+const tip = $("tip");
+function showTip(e, text) { tip.style.display = "block"; tip.textContent = text; tip.style.left = (e.clientX + 12) + "px"; tip.style.top = (e.clientY + 12) + "px"; }
+function hideTip() { tip.style.display = "none"; }
+function svgOpen(w, h) { return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img">`; }
+function axes(x0, y0, x1, y1, xt, yt) {
+  let s = `<line class="axis" x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}"/><line class="axis" x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1}"/>`;
+  for (const [x, l] of xt) s += `<line class="gridline" x1="${x}" y1="${y0}" x2="${x}" y2="${y1}"/><text x="${x}" y="${y1 + 16}" text-anchor="middle">${l}</text>`;
+  for (const [y, l] of yt) s += `<line class="gridline" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}"/><text x="${x0 - 8}" y="${y + 4}" text-anchor="end">${l}</text>`;
+  return s;
+}
+
+// ───────────── progress ─────────────
+const LESSONS = ["Orientation", "Lanes and judgments", "A rank has a level", "hit, recall, MRR, nDCG", "Wilson interval", "Strata", "Miss attribution", "Reciprocal rank fusion", "Convex fusion and the fit", "The null floor", "The conformal floor", "The gate: FNIR at FPIR", "Paired bootstrap", "Pre-registered verdicts", "Goldens and parity", "The command line", "Caps and document-first"];
+const KEY = "rankscope-workbook-progress";
+let done = {}; try { done = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { done = {}; }
+function saveDone() { try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) {} }
+function renderToc() {
+  $("toc").innerHTML = LESSONS.map((t, i) => `<li><a href="#l${i}" class="${done["l" + i] ? "done" : ""}"><span class="n">${done["l" + i] ? "✓" : String(i).padStart(2, "0")}</span>${t}</a></li>`).join("");
+  const n = Object.values(done).filter(Boolean).length;
+  $("progress-bar").style.width = (100 * n / LESSONS.length) + "%";
+  $("progress-label").textContent = `${n} of ${LESSONS.length} lessons marked done`;
+}
+document.querySelectorAll("input[data-done]").forEach(cb => { cb.checked = !!done[cb.dataset.done]; cb.addEventListener("change", () => { done[cb.dataset.done] = cb.checked; saveDone(); renderToc(); }); });
+renderToc();
+
+// ───────────── lesson 1: parse ─────────────
+const EX_BM25 = `q1 Q0 acme-manual#p12 1 12.1 bm25
+q1 Q0 acme-manual#p02 2 9.4 bm25
+q1 Q0 press-guide#p1 3 4.2 bm25
+q2 Q0 bolt-catalog#p3 1 15.0 bm25
+q2 Q0 bolt-catalog#p4 2 14.1 bm25
+q2 Q0 bolt-catalog#p9 3 6.0 bm25
+q3 Q0 press-guide#p2 1 5.5 bm25
+q3 Q0 bolt-catalog#p1 2 3.0 bm25
+q4 Q0 press-guide#p8 1 8.8 bm25
+q4 Q0 press-guide#p1 2 8.1 bm25
+q4 Q0 press-guide#p2 3 7.7 bm25
+q4 Q0 acme-manual#p02 4 4.0 bm25
+q4 Q0 bolt-catalog#p1 5 3.9 bm25
+q4 Q0 press-guide#p7 6 3.2 bm25
+n1 Q0 acme-manual#p02 1 7.7 bm25
+n1 Q0 acme-manual#p12 2 6.1 bm25`;
+const EX_DENSE = `q1 Q0 acme-manual#p13 1 0.81 dense
+q1 Q0 acme-manual#p12 2 0.79 dense
+q1 Q0 press-guide#p1 3 0.55 dense
+q2 Q0 bolt-catalog#p4 1 0.66 dense
+q2 Q0 bolt-catalog#p9 2 0.60 dense
+q2 Q0 acme-manual#p02 3 0.52 dense
+q3 Q0 acme-manual#p40 1 0.74 dense
+q3 Q0 acme-manual#p41 2 0.70 dense
+q3 Q0 press-guide#p2 3 0.51 dense
+q4 Q0 press-guide#p8 1 0.69 dense
+q4 Q0 press-guide#p1 2 0.63 dense
+q4 Q0 bolt-catalog#p1 3 0.50 dense
+n1 Q0 acme-manual#p41 1 0.71 dense
+n1 Q0 press-guide#p8 2 0.64 dense`;
+const EX_QRELS = `q1 0 acme-manual#p12 2
+q1 0 acme-manual#p13 1
+q2 0 bolt-catalog#p3 2
+q3 0 acme-manual#p40 1
+q4 0 press-guide#p7 2
+n1 0 acme-manual#p12 0`;
+$("run-bm25").value = EX_BM25; $("run-dense").value = EX_DENSE; $("qrels").value = EX_QRELS;
+const state = { lanes: {}, qrels: {}, errors: [] };
+function parseRun(text) { const per = {}; const errors = []; text.split("\n").forEach((line, i) => { const p = line.trim().split(/\s+/); if (!line.trim() || line.startsWith("#")) return; if (p.length < 6) { errors.push(`line ${i + 1}: expected 6 columns`); return; } const [q, , doc, , score] = p; (per[q] = per[q] || []).push({ doc, score: parseFloat(score) }); }); for (const q in per) { const seen = new Set(); for (const h of per[q]) { if (seen.has(h.doc)) errors.push(`${q}: ${h.doc} listed twice`); seen.add(h.doc); } per[q].sort((a, b) => b.score !== a.score ? b.score - a.score : (a.doc < b.doc ? -1 : 1)); } return { per, errors }; }
+function parseQrels(text) { const per = {}; text.split("\n").forEach(line => { const p = line.trim().split(/\s+/); if (!line.trim() || line.startsWith("#") || p.length < 4) return; (per[p[0]] = per[p[0]] || {})[p[2]] = parseInt(p[3], 10); }); const out = {}; for (const q in per) { const rel = Object.entries(per[q]).filter(([, g]) => g > 0).map(([d]) => d); out[q] = { grades: per[q], relevant: rel, negative: rel.length === 0 }; } return out; }
+function lab1() {
+  const a = parseRun($("run-bm25").value), b = parseRun($("run-dense").value);
+  state.lanes = { bm25: a.per, dense: b.per }; state.qrels = parseQrels($("qrels").value); state.errors = [...a.errors, ...b.errors];
+  const judged = Object.keys(state.qrels); const inLanes = new Set([...Object.keys(a.per), ...Object.keys(b.per)]); const unjudged = [...inLanes].filter(q => !state.qrels[q]);
+  let html = state.errors.length ? `<div class="warnbox">${esc(state.errors.join("; "))}</div>` : "";
+  html += `<div class="tablewrap"><table class="data"><thead><tr><th>query</th><th>judged as</th><th>bm25, ordered by score</th><th>dense, ordered by score</th></tr></thead><tbody>`;
+  for (const q of judged) { const j = state.qrels[q]; const fmt = hits => (hits || []).map(h => `${esc(h.doc)} <span style="color:var(--ink-3)">${h.score}</span>`).join("<br>"); html += `<tr><td>${esc(q)}</td><td style="text-align:left">${j.negative ? '<span class="pill warn">negative</span>' : j.relevant.map(esc).join("<br>")}</td><td style="text-align:left">${fmt(a.per[q])}</td><td style="text-align:left">${fmt(b.per[q])}</td></tr>`; }
+  html += `</tbody></table></div>`;
+  const missingA = judged.filter(q => !a.per[q]).length, missingB = judged.filter(q => !b.per[q]).length;
+  html += `<div class="stat-row">${stat("positives", judged.filter(q => !state.qrels[q].negative).length)}${stat("negatives", judged.filter(q => state.qrels[q].negative).length)}${stat("unjudged in lanes", unjudged.length, unjudged.join(", ") || "none")}${stat("judged but missing from a lane", `bm25 ${missingA} · dense ${missingB}`, missingA + missingB ? "scored as misses, and said so" : "")}</div>`;
+  $("lab1-out").innerHTML = html; lab2();
+}
+["run-bm25", "run-dense", "qrels"].forEach(id => $(id).addEventListener("input", lab1));
+
+// ───────────── lesson 2: levels ─────────────
+function lab2() {
+  const sep = $("sep").value || "#"; const groupOf = d => d.split(sep)[0];
+  let html = `<div class="tablewrap"><table class="data"><thead><tr><th>query</th><th>relevant</th><th>bm25 doc</th><th>bm25 group</th><th>dense doc</th><th>dense group</th></tr></thead><tbody>`;
+  for (const [q, j] of Object.entries(state.qrels)) { if (j.negative) continue; const cells = []; let hi = false; for (const lane of ["bm25", "dense"]) { const hits = state.lanes[lane][q] || []; const rd = rankOf(hits, j.relevant), rg = rankOf(hits, j.relevant, "group", groupOf); if (rg && !rd) hi = true; cells.push(`<td class="${rd ? "good" : "bad"}">${rd || "MISS"}</td><td class="${rg ? "good" : "bad"}">${rg || "MISS"}</td>`); } html += `<tr class="${hi ? "hi" : ""}"><td>${esc(q)}</td><td style="text-align:left">${j.relevant.map(esc).join("<br>")}</td>${cells.join("")}</tr>`; }
+  $("lab2-out").innerHTML = html + `</tbody></table></div>`;
+}
+$("sep").addEventListener("input", lab2);
+lab1();
+
+// ───────────── lesson 3: metrics ─────────────
+function lab3() {
+  const docs = $("m-rank").value.split(",").map(s => s.trim()).filter(Boolean);
+  const grades = {}; $("m-grades").value.split(",").forEach(p => { const [d, g] = p.split(":").map(s => s.trim()); if (d && g !== undefined && !isNaN(parseInt(g, 10))) grades[d] = parseInt(g, 10); });
+  const k = parseInt($("m-k").value, 10); const rel = Object.entries(grades).filter(([, g]) => g > 0).map(([d]) => d);
+  const rank = rankOf(docs.map(d => ({ doc: d })), rel);
+  let rows = "", dcg = 0; docs.slice(0, k).forEach((d, i) => { const g = 2 ** (grades[d] || 0) - 1, disc = 1 / Math.log2(i + 2), c = g * disc; dcg += c; rows += `<tr class="${grades[d] > 0 ? "hi" : ""}"><td>${i + 1}</td><td>${esc(d)}</td><td>${grades[d] || 0}</td><td>${g}</td><td>${f3(disc)}</td><td>${f3(c)}</td></tr>`; });
+  const ideal = Object.values(grades).filter(g => g > 0).sort((a, b) => b - a).slice(0, k); let idcg = 0; ideal.forEach((g, i) => { idcg += (2 ** g - 1) / Math.log2(i + 2); });
+  $("lab3-out").innerHTML = `<div class="tablewrap"><table class="data"><thead><tr><th>rank</th><th>doc</th><th>grade</th><th>gain 2^g−1</th><th>discount</th><th>gain × discount</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="stat-row">${stat(`hit@${k}`, rank && rank <= k ? "1" : "0", `first relevant at rank ${rank || "none"}`)}${stat(`recall@${k}`, f3(recallAt(docs, rel, k)), `${rel.length} relevant`)}${stat("reciprocal rank", rank ? f3(1 / rank) : "0")}${stat(`nDCG@${k}`, f3(idcg ? dcg / idcg : 0), `DCG ${f3(dcg)} / ideal ${f3(idcg)}`)}</div>`;
+}
+["m-rank", "m-grades"].forEach(id => $(id).addEventListener("input", lab3)); bindRange("m-k", "m-k-val", lab3); lab3();
+
+// ───────────── lesson 4: wilson ─────────────
+function lab4() {
+  const n = parseInt($("w-n").value, 10); const sEl = $("w-s"); sEl.max = n; if (parseInt(sEl.value, 10) > n) sEl.value = n; const s = parseInt(sEl.value, 10); $("w-s-val").textContent = s; $("w-n-val").textContent = n;
+  const [lo, hi] = wilson(s, n), [wlo, whi] = wald(s, n); const bound = Math.min(0.5, Math.max(0.001, parseFloat($("w-bound").value) || 0.05));
+  let html = `<div class="stat-row">${stat("point estimate", n ? f3(s / n) : "0")}${stat("Wilson 95%", `${f3(lo)} – ${f3(hi)}`, `width ${f3(hi - lo)}`)}${stat("normal approximation", `${f3(wlo)} – ${f3(whi)}`, s === 0 || s === n ? "collapses at the edge" : "")}${s === 0 ? stat("rule of three", f3(ruleOfThree(n)), "upper bound after zero events") : ""}</div>`;
+  // chart: upper Wilson bound after zero events, as n grows
+  const W = 720, H = 220, x0 = 50, y0 = 14, x1 = 700, y1 = 190; const ns = []; for (let m = 1; m <= 400; m += m < 20 ? 1 : m < 100 ? 5 : 20) ns.push(m);
+  const xs = m => x0 + (x1 - x0) * Math.log10(m) / Math.log10(400), ys = v => y1 - (y1 - y0) * v;
+  let svg = svgOpen(W, H) + axes(x0, y0, x1, y1, [1, 3, 10, 30, 100, 400].map(m => [xs(m), m]), [0, 0.25, 0.5, 0.75, 1].map(v => [ys(v), v]));
+  svg += `<path d="${ns.map((m, i) => (i ? "L" : "M") + xs(m) + "," + ys(wilson(0, m)[1])).join(" ")}" fill="none" stroke="var(--s1)" stroke-width="2"/>`;
+  svg += `<path d="${ns.map((m, i) => (i ? "L" : "M") + xs(m) + "," + ys(ruleOfThree(m))).join(" ")}" fill="none" stroke="var(--s2)" stroke-width="2" stroke-dasharray="4 3"/>`;
+  svg += `<line x1="${x0}" y1="${ys(bound)}" x2="${x1}" y2="${ys(bound)}" stroke="var(--ink-3)" stroke-dasharray="2 4"/><text x="${x1}" y="${ys(bound) - 4}" text-anchor="end">bound ${bound}</text>`;
+  svg += `<text x="${(x0 + x1) / 2}" y="${H - 2}" text-anchor="middle">trials n, log scale</text></svg>`;
+  html += `<div class="legend"><span style="--c:var(--s1)">Wilson upper limit after zero events</span><span style="--c:var(--s2)">rule of three, 3/n</span></div>` + svg;
+  html += `<div class="stat-row">${stat(`negatives for ≤ ${bound} (Wilson)`, negativesFor(bound))}${stat("rule of three", Math.ceil(3 / bound))}</div>`;
+  $("lab4-out").innerHTML = html;
+}
+["w-s", "w-n", "w-bound"].forEach(id => $(id).addEventListener("input", lab4)); lab4();
+
+// ───────────── lesson 5: strata ─────────────
+const STRATA = [["easy", 24, 23], ["medium", 22, 11], ["hard", 14, 0]];
+function lab5() {
+  const tb = $("strata-table").querySelector("tbody"); const collapse = $("strata-collapse").checked;
+  if (!tb.dataset.built) { tb.innerHTML = STRATA.map(([name, n, h], i) => `<tr data-row><td>${name}</td><td><input type="number" class="s-n" data-i="${i}" value="${n}" min="0" max="500" style="width:70px"></td><td><input type="number" class="s-h" data-i="${i}" value="${h}" min="0" max="500" style="width:70px"></td><td class="s-rate"></td><td class="s-ci"></td></tr>`).join("") + `<tr class="hi" data-all><td>all</td><td class="a-n"></td><td class="a-h"></td><td class="a-rate"></td><td class="a-ci"></td></tr>`; tb.dataset.built = "1"; tb.querySelectorAll("input").forEach(i => i.addEventListener("input", lab5)); }
+  let N = 0, HH = 0; tb.querySelectorAll("tr[data-row]").forEach((tr, i) => { const n = parseInt(tr.querySelector(".s-n").value, 10) || 0; const h = Math.min(n, parseInt(tr.querySelector(".s-h").value, 10) || 0); N += n; HH += h; const [lo, hi] = wilson(h, n); tr.querySelector(".s-rate").textContent = n ? f2(h / n) : "–"; tr.querySelector(".s-ci").textContent = n ? `${f2(lo)} – ${f2(hi)}` : "–"; tr.style.display = collapse ? "none" : ""; });
+  const [lo, hi] = wilson(HH, N); tb.querySelector(".a-n").textContent = N; tb.querySelector(".a-h").textContent = HH; tb.querySelector(".a-rate").textContent = N ? f2(HH / N) : "–"; tb.querySelector(".a-ci").textContent = `${f2(lo)} – ${f2(hi)}`;
+  const worst = STRATA.map((s, i) => { const tr = tb.querySelectorAll("tr[data-row]")[i]; const n = parseInt(tr.querySelector(".s-n").value, 10) || 0, h = parseInt(tr.querySelector(".s-h").value, 10) || 0; return [s[0], n ? h / n : 0, n]; }).sort((a, b) => a[1] - b[1])[0];
+  $("lab5-out").innerHTML = `<p class="note" style="margin:10px 0 0">Overall ${f2(N ? HH / N : 0)}. Weakest stratum: ${worst[0]} at ${f2(worst[1])} on ${worst[2]} queries${collapse ? " (hidden by the collapse: that is what an average does)" : ""}.</p>`;
+}
+$("strata-collapse").addEventListener("change", lab5); lab5();
+
+// ───────────── lesson 6: attribution ─────────────
+const ATT = [["q01", 1, 1, 2], ["q02", 1, 0, 1], ["q03", 1, 3, 0], ["q04", 1, 8, 2], ["q05", 1, 0, 0], ["q06", 0, 0, 0], ["q07", 1, 12, 4], ["q08", 1, 2, 9], ["q09", 1, 0, 17], ["q10", 1, 6, 6]];
+function lab6() {
+  const tb = $("att-table").querySelector("tbody"); const w = parseInt($("att-w").value, 10);
+  if (!tb.dataset.built) { tb.innerHTML = ATT.map(([q, idx, a, b], i) => `<tr><td>${q}</td><td><input type="checkbox" class="a-idx" ${idx ? "checked" : ""}></td><td><input type="number" class="a-l" value="${a}" min="0" max="100" style="width:64px"></td><td><input type="number" class="a-d" value="${b}" min="0" max="100" style="width:64px"></td><td class="a-out" style="text-align:left"></td></tr>`).join(""); tb.dataset.built = "1"; tb.querySelectorAll("input").forEach(i => i.addEventListener("input", lab6)); }
+  const counts = {}; let indexed = 0, missL = 0, missD = 0;
+  tb.querySelectorAll("tr").forEach(tr => { const idx = tr.querySelector(".a-idx").checked; const l = parseInt(tr.querySelector(".a-l").value, 10) || 0, d = parseInt(tr.querySelector(".a-d").value, 10) || 0; const label = missAttribution(idx, { lexical: l, dense: d }, w); counts[label] = (counts[label] || 0) + 1; tr.querySelector(".a-out").textContent = label; tr.className = label === "not_surfaced" ? "hi" : ""; if (idx) { indexed++; if (!(l > 0 && l <= w)) missL++; if (!(d > 0 && d <= w)) missD++; } });
+  const only = (counts["surfaced_by_dense"] || 0);
+  $("lab6-out").innerHTML = `<div class="stat-row">${Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([k, v]) => stat(k, v)).join("")}</div>
+  <p class="note">Indexed but not surfaced by any lane: ${prop(counts["not_surfaced"] || 0, indexed)}. Not surfaced by lexical alone: ${prop(missL, indexed)}. Not surfaced by dense alone: ${prop(missD, indexed)}. The dense lane's own contribution, positives only it surfaced: ${prop(only, indexed)}.</p>`;
+}
+bindRange("att-w", "att-w-val", lab6); lab6();
+
+// ───────────── lesson 7: rrf ─────────────
+function lab7() {
+  const depth = parseInt($("rrf-d").value, 10); const A = $("rrf-a").value.split(",").map(s => s.trim()).filter(Boolean).slice(0, depth), B = $("rrf-b").value.split(",").map(s => s.trim()).filter(Boolean).slice(0, depth); const k = parseInt($("rrf-k").value, 10);
+  const fused = rrf([A, B], k); const rA = d => A.indexOf(d) + 1, rB = d => B.indexOf(d) + 1;
+  let rows = fused.map((h, i) => `<tr class="${h.doc === "truth" ? "hi" : ""}"><td>${i + 1}</td><td>${esc(h.doc)}</td><td>${rA(h.doc) || "–"}</td><td>${rB(h.doc) || "–"}</td><td>${rA(h.doc) ? (1 / (k + rA(h.doc))).toFixed(5) : "0"}</td><td>${rB(h.doc) ? (1 / (k + rB(h.doc))).toFixed(5) : "0"}</td><td>${h.score.toFixed(5)}</td></tr>`).join("");
+  $("lab7-out").innerHTML = `<div class="tablewrap"><table class="data"><thead><tr><th>fused rank</th><th>doc</th><th>lexical rank</th><th>dense rank</th><th>1/(k+r) lexical</th><th>1/(k+r) dense</th><th>sum</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note" style="margin:10px 0 0">Rank 1 in one lane alone: 1/(k+1) = ${(1 / (k + 1)).toFixed(5)}. Rank 2 in both: 2/(k+2) = ${(2 / (k + 2)).toFixed(5)}.</p>`;
+}
+["rrf-a", "rrf-b"].forEach(id => $(id).addEventListener("input", lab7)); bindRange("rrf-k", "rrf-k-val", lab7); bindRange("rrf-d", "rrf-d-val", lab7); lab7();
+
+// ───────────── lesson 8: convex fit ─────────────
+function synthQueries(rng, n, q) { const out = []; for (let i = 0; i < n; i++) { const docs = 30; const lex = [], den = []; const blind = rng() < 0.35; for (let d = 0; d < docs; d++) { const id = "d" + d; const truth = d === 0; let ls = -Math.log(1 - rng()) * 1.5 + (truth && !blind ? 6 + gauss(rng) * 2 : 0); let ds = 0.45 + 0.08 * gauss(rng) + (truth ? (q - 0.45) + 0.07 * gauss(rng) : 0); lex.push({ doc: id, score: Math.max(0, ls) }); den.push({ doc: id, score: Math.min(0.999, Math.max(0, ds)) }); } lex.sort((a, b) => b.score - a.score || (a.doc < b.doc ? -1 : 1)); den.sort((a, b) => b.score - a.score || (a.doc < b.doc ? -1 : 1)); out.push({ lanes: { lexical: lex.slice(0, 20), dense: den.slice(0, 20) }, rel: ["d0"] }); } return out; }
+function objective(qs, w) { return mean(qs.map(q => { const r = rankOf(convex(q.lanes, { lexical: 1 - w, dense: w }), q.rel); return r ? 1 / r : 0; })); }
+function lab8() {
+  const n = parseInt($("fit-n").value, 10), q = parseFloat($("fit-q").value), seed = parseInt($("fit-seed").value, 10) || 0, cheat = $("fit-cheat").checked;
+  const rng = mulberry(seed * 7919 + 11); const cal = synthQueries(rng, n, q), held = synthQueries(rng, 60, q);
+  const grid = []; for (let i = 0; i <= 10; i++) grid.push(i / 10);
+  const vals = grid.map(w => objective(cheat ? cal.concat(held) : cal, w)); let best = 0; vals.forEach((v, i) => { if (v > vals[best] + 1e-12) best = i; });
+  const heldAt = grid.map(w => objective(held, w)); const rrfHeld = mean(held.map(qq => { const r = rankOf(rrf([qq.lanes.lexical.map(h => h.doc), qq.lanes.dense.map(h => h.doc)]).map(h => ({ doc: h.doc })), qq.rel); return r ? 1 / r : 0; }));
+  const W = 720, H = 220, x0 = 50, y0 = 14, x1 = 700, y1 = 190; const xs = w => x0 + (x1 - x0) * w, ys = v => y1 - (y1 - y0) * v;
+  let svg = svgOpen(W, H) + axes(x0, y0, x1, y1, grid.map(w => [xs(w), w.toFixed(1)]), [0, 0.25, 0.5, 0.75, 1].map(v => [ys(v), v]));
+  svg += `<path d="${grid.map((w, i) => (i ? "L" : "M") + xs(w) + "," + ys(vals[i])).join(" ")}" fill="none" stroke="var(--s1)" stroke-width="2"/>`;
+  svg += `<path d="${grid.map((w, i) => (i ? "L" : "M") + xs(w) + "," + ys(heldAt[i])).join(" ")}" fill="none" stroke="var(--s2)" stroke-width="2"/>`;
+  svg += `<circle cx="${xs(grid[best])}" cy="${ys(vals[best])}" r="6" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/><circle cx="${xs(grid[best])}" cy="${ys(heldAt[best])}" r="6" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"/>`;
+  svg += `<line x1="${x0}" y1="${ys(rrfHeld)}" x2="${x1}" y2="${ys(rrfHeld)}" stroke="var(--s3)" stroke-dasharray="4 3" stroke-width="2"/>`;
+  svg += `<text x="${(x0 + x1) / 2}" y="${H - 2}" text-anchor="middle">weight on the dense lane (lexical gets 1 − w)</text></svg>`;
+  $("lab8-out").innerHTML = `<div class="legend"><span style="--c:var(--s1)">objective (MRR) on the ${cheat ? "calibration + held-out" : "calibration"} queries</span><span style="--c:var(--s2)">the same weights on the held-out queries</span><span style="--c:var(--s3)">RRF on held-out, the zero-tuning baseline</span></div>${svg}
+  <div class="stat-row">${stat("fitted weight, dense", grid[best].toFixed(1))}${stat("objective where fitted", f3(vals[best]))}${stat("held-out at that weight", f3(heldAt[best]), cheat ? "chosen with these queries in view" : "honest")}${stat("RRF held-out", f3(rrfHeld))}</div>`;
+}
+["fit-seed", "fit-cheat"].forEach(id => $(id).addEventListener(id === "fit-cheat" ? "change" : "input", lab8)); bindRange("fit-n", "fit-n-val", lab8); bindRange("fit-q", "fit-q-val", lab8, x => x.toFixed(2)); lab8();
+
+// ───────────── lesson 9: null floor (shared samples with lesson 11) ─────────────
+const samples = { neg: [], pos: [] };
+function sampleAll() {
+  const rng = mulberry((parseInt($("nf-seed").value, 10) || 0) * 31 + 5); const n = parseInt($("nf-n").value, 10), nm = parseFloat($("nf-nm").value), ns = parseFloat($("nf-ns").value), tm = parseFloat($("nf-tm").value), ts = parseFloat($("nf-ts").value);
+  samples.neg = Array.from({ length: n }, () => Math.min(1, Math.max(0, nm + ns * gauss(rng)))); samples.pos = Array.from({ length: 80 }, () => Math.min(1, Math.max(0, tm + ts * gauss(rng))));
+}
+function histogram(values, bins, lo, hi) { const h = new Array(bins).fill(0); for (const v of values) { let b = Math.floor((v - lo) / (hi - lo) * bins); b = Math.max(0, Math.min(bins - 1, b)); h[b]++; } return h; }
+function lab9() {
+  sampleAll(); const nf = nullFloor(samples.neg); const far = samples.neg.filter(s => s >= nf.floor).length, fnir = samples.pos.filter(s => s < nf.floor).length;
+  const bins = 25, lo = 0.2, hi = 1.0; const hn = histogram(samples.neg, bins, lo, hi), hp = histogram(samples.pos, bins, lo, hi); const top = Math.max(...hn, ...hp, 1);
+  const W = 720, H = 220, x0 = 50, y0 = 14, x1 = 700, y1 = 190; const xs = v => x0 + (x1 - x0) * (v - lo) / (hi - lo), ys = c => y1 - (y1 - y0) * c / top; const bw = (x1 - x0) / bins;
+  let svg = svgOpen(W, H) + axes(x0, y0, x1, y1, [0.2, 0.4, 0.6, 0.8, 1.0].map(v => [xs(v), v]), [0, Math.round(top / 2), top].map(c => [ys(c), c]));
+  for (let b = 0; b < bins; b++) { const x = x0 + b * bw; svg += `<rect x="${x + 1}" y="${ys(hn[b])}" width="${bw / 2 - 1.5}" height="${y1 - ys(hn[b])}" fill="var(--s2)" data-t="negatives ${(lo + b * (hi - lo) / bins).toFixed(2)}–${(lo + (b + 1) * (hi - lo) / bins).toFixed(2)}: ${hn[b]}"/><rect x="${x + bw / 2 + 0.5}" y="${ys(hp[b])}" width="${bw / 2 - 1.5}" height="${y1 - ys(hp[b])}" fill="var(--s1)" data-t="positives ${(lo + b * (hi - lo) / bins).toFixed(2)}–${(lo + (b + 1) * (hi - lo) / bins).toFixed(2)}: ${hp[b]}"/>`; }
+  if (nf.floor <= hi) svg += `<line x1="${xs(nf.floor)}" y1="${y0}" x2="${xs(nf.floor)}" y2="${y1}" stroke="var(--ink)" stroke-width="2" stroke-dasharray="5 3"/><text x="${xs(nf.floor) + 6}" y="${y0 + 10}">floor ${f3(nf.floor)}</text>`;
+  svg += `<text x="${(x0 + x1) / 2}" y="${H - 2}" text-anchor="middle">score</text></svg>`;
+  $("lab9-chart").innerHTML = svg; $("lab9-chart").querySelectorAll("rect[data-t]").forEach(r => { r.addEventListener("mousemove", e => showTip(e, r.dataset.t)); r.addEventListener("mouseleave", hideTip); });
+  $("lab9-out").innerHTML = `<div class="stat-row">${stat("negatives n", nf.n)}${stat("mean of best scores", f3(nf.mean))}${stat("std", f3(nf.std))}${stat("floor = mean + 3·std", fmtInf(nf.floor))}</div><div class="stat-row">${stat("FAR at the floor", prop(far, samples.neg.length))}${stat("FNIR at the floor", prop(fnir, samples.pos.length))}${stat("conformal floor α=0.1", fmtInf(conformalFloor(samples.pos, 0.1)), `n = ${samples.pos.length}`)}</div>`;
+  lab11();
+}
+["nf-n", "nf-nm", "nf-ns", "nf-tm", "nf-ts"].forEach(id => bindRange(id, id + "-val", lab9, x => id === "nf-n" ? x : x.toFixed(2))); $("nf-seed").addEventListener("input", lab9);
+function preset(nm, ns, tm, ts) { $("nf-nm").value = nm; $("nf-ns").value = ns; $("nf-tm").value = tm; $("nf-ts").value = ts; ["nf-nm", "nf-ns", "nf-tm", "nf-ts"].forEach(id => $(id + "-val").textContent = parseFloat($(id).value).toFixed(2)); lab9(); }
+$("nf-hard").addEventListener("click", () => preset(0.69, 0.05, 0.66, 0.07)); $("nf-easy").addEventListener("click", () => preset(0.59, 0.04, 0.66, 0.07));
+
+// ───────────── lesson 10: conformal ─────────────
+function lab10(sim) {
+  const a = parseFloat($("cf-a").value), n = parseInt($("cf-n").value, 10); const idx = conformalIndex(n, a), minN = conformalMinN(a);
+  let rows = ""; for (let m = 1; m <= 40; m++) { const i = conformalIndex(m, a); const what = i > m ? "undefined: +inf (no finite bound)" : i === m ? "the smallest calibration score" : `the ${m - i + 1}${["st", "nd", "rd"][m - i] || "th"} smallest`; rows += `<tr class="${m === n ? "hi" : ""}"><td>${m}</td><td>${i}</td><td style="text-align:left">${what}</td></tr>`; }
+  let html = `<div class="stat-row">${stat("index ⌈(n+1)(1−α)⌉", idx)}${stat("min n for a finite bound", minN)}${stat("floor at this n", idx > n ? "−inf" : `the ${n - idx + 1}${["st", "nd", "rd"][n - idx] || "th"} smallest score`)}</div>`;
+  if (sim) { const rng = mulberry(99); let miss = 0, trials = 1000; for (let t = 0; t < trials; t++) { const cal = Array.from({ length: n }, () => 0.7 + 0.1 * gauss(rng)); const floor = conformalFloor(cal, a); miss += (0.7 + 0.1 * gauss(rng)) < floor ? 1 : 0; } const [lo, hi] = wilson(miss, trials); html += `<div class="stat-row">${stat("simulated miss rate", `${(miss / trials).toFixed(3)}`, `95% ${lo.toFixed(3)}–${hi.toFixed(3)} over ${trials} calibration sets · target α = ${a.toFixed(2)}`)}</div>`; }
+  html += `<div class="tablewrap" style="max-height:260px;overflow-y:auto"><table class="data"><thead><tr><th>n</th><th>index</th><th>the floor is</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  $("lab10-out").innerHTML = html;
+}
+bindRange("cf-a", "cf-a-val", () => lab10(false), x => x.toFixed(2)); bindRange("cf-n", "cf-n-val", () => lab10(false)); $("cf-sim").addEventListener("click", () => lab10(true)); lab10(false);
+
+// ───────────── lesson 11: gate sweep ─────────────
+function lab11() {
+  const floor = parseFloat($("g-floor").value), target = parseFloat($("g-target").value) || 0; const neg = samples.neg, pos = samples.pos;
+  const floors = [...new Set([...neg, ...pos])].sort((a, b) => a - b); const rows = floors.map(f => ({ floor: f, fpir: neg.filter(s => s >= f).length / neg.length, fnir: pos.filter(s => s < f).length / pos.length }));
+  const conservative = $("g-cons").checked; const at = { fpir: neg.filter(s => s >= floor).length, fnir: pos.filter(s => s < floor).length };
+  const qualifies = r => (conservative ? wilson(Math.round(r.fpir * neg.length), neg.length)[1] : r.fpir) <= target;
+  const found = rows.find(qualifies); const op = found || { floor: Infinity, fpir: 0, fnir: 1 };
+  const W = 720, H = 240, x0 = 50, y0 = 14, x1 = 700, y1 = 200; const xs = v => x0 + (x1 - x0) * v, ys = v => y1 - (y1 - y0) * v;
+  let svg = svgOpen(W, H) + axes(x0, y0, x1, y1, [0, 0.25, 0.5, 0.75, 1].map(v => [xs(v), v]), [0, 0.25, 0.5, 0.75, 1].map(v => [ys(v), v]));
+  svg += `<path d="${rows.map((r, i) => (i ? "L" : "M") + xs(r.fpir) + "," + ys(r.fnir)).join(" ")}" fill="none" stroke="var(--s1)" stroke-width="2"/>`;
+  svg += `<line x1="${xs(target)}" y1="${y0}" x2="${xs(target)}" y2="${y1}" stroke="var(--ink-3)" stroke-dasharray="2 4"/><text x="${xs(target) + 4}" y="${y0 + 10}">FPIR target ${target}</text>`;
+  svg += `<circle cx="${xs(at.fpir / neg.length)}" cy="${ys(at.fnir / pos.length)}" r="7" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"/>`;
+  svg += `<text x="${(x0 + x1) / 2}" y="${H - 2}" text-anchor="middle">FPIR, negatives accepted</text><text transform="translate(12,${(y0 + y1) / 2}) rotate(-90)" text-anchor="middle">FNIR, positives missed</text></svg>`;
+  $("lab11-chart").innerHTML = svg;
+  const opNote = found ? `FPIR ${f2(op.fpir)} (95% up to ${f2(wilson(Math.round(op.fpir * neg.length), neg.length)[1])}) · FNIR ${f2(op.fnir)}, on these same negatives` : `no finite floor: zero false accepts in ${neg.length} negatives only bounds FPIR at ${f2(wilson(0, neg.length)[1])}; at least ${negativesFor(target)} would be needed`;
+  $("lab11-out").innerHTML = `<div class="stat-row">${stat("at the chosen floor: FAR", prop(at.fpir, neg.length))}${stat("FNIR", prop(at.fnir, pos.length))}${stat(`operating floor for FPIR ≤ ${target}${conservative ? ", upper bound" : ""}`, fmtInf(op.floor), opNote)}</div>`;
+}
+bindRange("g-floor", "g-floor-val", lab11, x => x.toFixed(3)); $("g-target").addEventListener("input", lab11); $("g-cons").addEventListener("change", lab11); lab9();
+
+// ───────────── lesson 12: paired bootstrap ─────────────
+function lab12() {
+  const n = parseInt($("pb-n").value, 10), d = parseFloat($("pb-d").value), s = parseFloat($("pb-s").value), minD = parseFloat($("pb-min").value) || 0, unpaired = $("pb-unpaired").checked, seed = parseInt($("pb-seed").value, 10) || 0;
+  const rng = mulberry(seed * 17 + 3); const a = [], b = []; for (let i = 0; i < n; i++) { const base = Math.min(1, Math.max(0, 0.45 + 0.25 * gauss(rng))); a.push(base); b.push(Math.min(1, Math.max(0, base + d + s * gauss(rng)))); }
+  const R = 2000; const means = []; let wins = 0; for (let r = 0; r < R; r++) { let t = 0; if (unpaired) { let ta = 0, tb = 0; for (let i = 0; i < n; i++) { ta += a[Math.floor(rng() * n)]; tb += b[Math.floor(rng() * n)]; } t = (tb - ta) / n; } else { for (let i = 0; i < n; i++) { const j = Math.floor(rng() * n); t += b[j] - a[j]; } t /= n; } means.push(t); if (t > 0) wins++; }
+  means.sort((x, y) => x - y); const lo = means[Math.floor(0.025 * R)], hi = means[Math.min(Math.floor(0.975 * R), R - 1)], delta = mean(b) - mean(a), p = wins / R;
+  const bins = 30, mn = Math.min(-0.05, means[0]), mx = Math.max(0.05, means[R - 1]); const h = histogram(means, bins, mn, mx); const top = Math.max(...h);
+  const W = 720, H = 220, x0 = 50, y0 = 14, x1 = 700, y1 = 190; const xs = v => x0 + (x1 - x0) * (v - mn) / (mx - mn), ys = c => y1 - (y1 - y0) * c / top; const bw = (x1 - x0) / bins;
+  const ticks = []; for (let v = Math.ceil(mn * 20) / 20; v <= mx; v += 0.05) ticks.push([xs(v), v.toFixed(2)]);
+  let svg = svgOpen(W, H) + axes(x0, y0, x1, y1, ticks, [0, top].map(c => [ys(c), c]));
+  for (let i = 0; i < bins; i++) { const x = x0 + i * bw; svg += `<rect x="${x + 1}" y="${ys(h[i])}" width="${bw - 2}" height="${y1 - ys(h[i])}" fill="var(--s1)" data-t="${(mn + i * (mx - mn) / bins).toFixed(3)}–${(mn + (i + 1) * (mx - mn) / bins).toFixed(3)}: ${h[i]}"/>`; }
+  svg += `<line x1="${xs(0)}" y1="${y0}" x2="${xs(0)}" y2="${y1}" stroke="var(--ink)" stroke-width="2"/><line x1="${xs(lo)}" y1="${y0 + 4}" x2="${xs(hi)}" y2="${y0 + 4}" stroke="var(--s2)" stroke-width="3"/><text x="${xs(hi) + 4}" y="${y0 + 8}">95% interval</text>`;
+  svg += `<text x="${(x0 + x1) / 2}" y="${H - 2}" text-anchor="middle">mean delta, candidate − baseline, per resample</text></svg>`;
+  $("lab12-chart").innerHTML = svg; $("lab12-chart").querySelectorAll("rect[data-t]").forEach(r => { r.addEventListener("mousemove", e => showTip(e, r.dataset.t)); r.addEventListener("mouseleave", hideTip); });
+  const better = p >= 0.95 && delta >= minD;
+  $("lab12-out").innerHTML = `<div class="stat-row">${stat("mean baseline", f3(mean(a)))}${stat("mean candidate", f3(mean(b)))}${stat("delta", (delta >= 0 ? "+" : "") + f3(delta), `95% ${f3(lo)} to ${f3(hi)}`)}${stat("P(candidate > baseline)", f3(p), `${R} ${unpaired ? "unpaired" : "paired"} resamples`)}</div><p><span class="pill ${better ? "good" : "bad"}">${better ? "BETTER" : "NOT SHOWN BETTER"}</span> <span class="note">needs P ≥ 0.95 and delta ≥ ${minD}</span></p>`;
+}
+["pb-n", "pb-d", "pb-s"].forEach(id => bindRange(id, id + "-val", lab12, x => id === "pb-n" ? x : x.toFixed(2))); ["pb-min", "pb-seed"].forEach(id => $(id).addEventListener("input", lab12)); $("pb-unpaired").addEventListener("change", lab12); lab12();
+
+// ───────────── lesson 13: verdict ─────────────
+const REPORT = { metrics: { dense: { doc: { hard: { "hit@20": 0.857, "hit@20_ci": [0.60, 0.96] }, all: { "hit@5": 0.85, "hit@5_ci": [0.74, 0.92] } } }, rrf: { doc: { all: { "hit@5": 0.633, "hit@5_ci": [0.51, 0.74] } } } }, attribution: { blind_share_of_misses: { lexical: { p: 0.382, k: 13, n: 34, lo: 0.24, hi: 0.55 } } }, gates: { "fpir-0.05": { far: { p: 0.033, k: 1, n: 30, lo: 0.01, hi: 0.17 } } } };
+const RULES = [["hard share of lexical misses is material", "attribution.blind_share_of_misses.lexical", ">=", 0.2], ["dense hit@20 on the hard stratum", "metrics.dense.doc.hard.hit@20", ">=", 0.6], ["rrf keeps hit@5 over all strata", "metrics.rrf.doc.all.hit@5", ">=", 0.5], ["false accepts at the FPIR floor", "gates.fpir-0.05.far", "<=", 0.05]];
+function resolve(path) { const parts = path.split("."); let node = REPORT, parent = REPORT, key = "", i = 0; while (i < parts.length) { let stop = null; for (let j = parts.length; j > i; j--) { const c = parts.slice(i, j).join("."); if (node && typeof node === "object" && c in node) { stop = j; key = c; break; } } if (stop === null) throw new Error("no " + path); parent = node; node = node[key]; i = stop; } if (node && typeof node === "object" && "p" in node) return [node.p, node.lo, node.hi]; const ci = parent[key + "_ci"]; return [node, ci ? ci[0] : null, ci ? ci[1] : null]; }
+function lab13() {
+  const tb = $("v-table").querySelector("tbody");
+  if (!tb.dataset.built) { tb.innerHTML = RULES.map(([name, path, op, t], i) => `<tr><td>${name}</td><td style="text-align:left">${path}</td><td><select class="v-op"><option ${op === ">=" ? "selected" : ""}>&gt;=</option><option ${op === "<=" ? "selected" : ""}>&lt;=</option></select></td><td><input type="number" class="v-t" value="${t}" step="0.01" min="0" max="1" style="width:74px"></td><td class="v-m"></td><td class="v-ci"></td><td class="v-p"></td><td class="v-i"></td></tr>`).join(""); tb.dataset.built = "1"; tb.querySelectorAll("input,select").forEach(i => i.addEventListener("input", lab13)); }
+  let allP = true, allI = true; tb.querySelectorAll("tr").forEach((tr, i) => { const op = tr.querySelector(".v-op").value, t = parseFloat(tr.querySelector(".v-t").value); const [v, lo, hi] = resolve(RULES[i][1]); const point = op === ">=" ? v >= t : v <= t; const interval = op === ">=" ? lo !== null && lo >= t : hi !== null && hi <= t; allP = allP && point; allI = allI && interval; tr.querySelector(".v-m").textContent = f2(v); tr.querySelector(".v-ci").textContent = lo === null ? "–" : `${f2(lo)}–${f2(hi)}`; tr.querySelector(".v-p").innerHTML = `<span class="pill ${point ? "good" : "bad"}">${point ? "pass" : "FAIL"}</span>`; tr.querySelector(".v-i").innerHTML = `<span class="pill ${interval ? "good" : ""}">${interval ? "pass" : "open"}</span>`; });
+  $("lab13-out").innerHTML = `<p style="margin-top:12px"><b>verdict:</b> ${allI ? "PASS (every gate clears on its interval)" : allP ? "PASS ON POINT ESTIMATES ONLY (some intervals straddle a threshold; more queries first)" : "FAIL"}</p>`;
+}
+lab13();
+
+// ───────────── lesson 14: goldens ─────────────
+function num(v) { return v === Infinity ? "inf" : v === -Infinity ? "-inf" : Number(v.toPrecision(12)).toString(); }
+function goldens() {
+  const L = ["rankscope-goldens 1"];
+  for (const [s, n] of [[45, 50], [0, 30], [0, 3], [8, 12]]) { const [lo, hi] = wilson(s, n); L.push(`wilson ${s} ${n} -> ${num(lo)} ${num(hi)}`); }
+  for (const b of [0.1, 0.05, 0.01]) L.push(`negatives_for ${b} -> ${negativesFor(b)}`);
+  for (const v of [[0.5, 0.6, 0.7], [0.85, 0.79, 0.83], []]) { const o = nullFloor(v); L.push(`null_floor 3 ${v.length ? v.join(",") : "-"} -> ${o.n} ${num(o.mean)} ${num(o.std)} ${num(o.floor)}`); }
+  const thirty = Array.from({ length: 30 }, (_, i) => (i + 1) / 30);
+  L.push(`conformal 0.1 ${thirty.map(num).join(",")} -> ${num(conformalQuantile(thirty, 0.1))}`); L.push(`conformal 0.1 ${Array(8).fill("0.2").join(",")} -> ${num(conformalQuantile(Array(8).fill(0.2), 0.1))}`);
+  for (const k of [1, 5, 20]) L.push(`hit ${k} 1,3,0,6 -> ${num(hitRate([1, 3, 0, 6], k))}`); L.push(`mrr 1,3,0,6 -> ${num(mrr([1, 3, 0, 6]))}`);
+  L.push(`recall 5 a,b,c|a,x,b,y,z,c -> ${num(recallAt(["a", "x", "b", "y", "z", "c"], ["a", "b", "c"], 5))}`); L.push(`ndcg 10 a:2,b:1|x,a,b -> ${num(ndcgAt(["x", "a", "b"], { a: 2, b: 1 }, 10))}`);
+  L.push(`rrf 60 a,b,c;c,d -> ${rrf([["a", "b", "c"], ["c", "d"]], 60).map(h => h.doc + ":" + num(h.score)).join(",")}`);
+  const hits = [{ doc: "a" }, { doc: "b" }, { doc: "c" }, { doc: "d" }]; const g = { a: "G1", b: "G2", c: "G1", d: "G3" }; L.push(`rank doc G1:a,G2:b,G1:c,G3:d c -> ${rankOf(hits, ["c"])}`); L.push(`rank group G1:a,G2:b,G1:c,G3:d c -> ${rankOf(hits, ["c"], "group", d => g[d])}`);
+  return L.join("\n");
+}
+$("lab14-out").textContent = goldens();
+$("copy-goldens").addEventListener("click", () => { navigator.clipboard.writeText(goldens()).then(() => { $("copy-note").textContent = "copied"; setTimeout(() => $("copy-note").textContent = "", 1500); }, () => { $("copy-note").textContent = "select the text and copy it"; }); });
+
+// ───────────── lesson 16: caps and document-first ─────────────
+function capPerGroup(docs, groupOf, cap) { const seen = {}; return docs.filter(d => { const g = groupOf(d); seen[g] = (seen[g] || 0) + 1; return seen[g] <= cap; }); }
+function documentFirst(docs, groupOf, capOthers) { if (!docs.length) return []; const winner = groupOf(docs[0]); const inside = docs.filter(d => groupOf(d) === winner); let others = docs.filter(d => groupOf(d) !== winner); if (capOthers) others = capPerGroup(others, groupOf, capOthers); return inside.concat(others); }
+function lab16() {
+  const docs = $("rr-list").value.split(",").map(s => s.trim()).filter(Boolean); const truth = $("rr-truth").value.trim(); const cap = parseInt($("rr-cap").value, 10); const groupOf = d => d.split("#")[0];
+  const variants = [["original", docs], [`cap ${cap} across groups`, capPerGroup(docs, groupOf, cap)], [`document-first, others capped at ${cap}`, documentFirst(docs, groupOf, cap)]];
+  const groupRank = list => { const wanted = groupOf(truth); const i = list.findIndex(d => groupOf(d) === wanted); return i + 1; };
+  const cols = variants.map(([name, list]) => { const r = list.indexOf(truth) + 1; return `<div style="flex:1;min-width:200px"><div class="stat"><div class="k">${name}</div><div class="v">${r ? "rank " + r : "MISS"} <small>group rank ${groupRank(list) || "MISS"}</small></div></div><ol style="font-family:var(--mono);font-size:12.5px;padding-left:22px;margin:8px 0 0">${list.map(d => `<li${d === truth ? ' style="color:var(--good);font-weight:600"' : ""}>${esc(d)}</li>`).join("")}</ol></div>`; });
+  $("lab16-out").innerHTML = `<div style="display:flex;gap:16px;flex-wrap:wrap">${cols.join("")}</div>`;
+}
+["rr-list", "rr-truth"].forEach(id => $(id).addEventListener("input", lab16)); bindRange("rr-cap", "rr-cap-val", lab16); lab16();
+})();
+</script>
+
+</body>
+</html>

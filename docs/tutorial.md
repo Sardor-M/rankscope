@@ -1,6 +1,6 @@
 # Tutorial: the internals, one module at a time
 
-Fourteen lessons. Each names the module to read, a command to run, a question the output
+Sixteen lessons. Each names the module to read, a command to run, a question the output
 answers, and an exercise that changes something. Commands assume `pip install -e ".[dev]"`
 and `rankscope synth --out data/synth` from the repository root. Numbers quoted are for the
 default seed; yours will match until you change the generator.
@@ -205,6 +205,30 @@ five changes hit@20 by construction; does it change hit@5?
 Exercise: put a `diff` step in a CI job that evaluates every pull request against a stored
 baseline report. Decide, before you see a failure, whether a regression on one stratum
 should block a merge.
+
+## 15. Caps and document-first (`fusion.cap_per_group`, `document_first`)
+
+```sh
+rankscope evaluate ... --group-sep '#' --cap 5 --document-first --quiet
+```
+
+Question: compare `rrf`, `rrf+cap5` and `rrf+docfirst` at doc level and at group level.
+Which rule costs doc-level recall, on which stratum, and why does document-first leave
+group-level hit@1 unchanged by construction?
+
+Exercise: on your own data, find a query whose relevant passage sits below five other
+passages of the same document. Show that the cap removes it and document-first keeps it,
+then decide from the group-level hit@1 whether document-first is safe to turn on.
+
+## 16. Margin, mutual nearest neighbour and relative rules
+
+Question: `calibrate` prints an operating margin and FAR and FNIR at mutual ranks 1, 3
+and 5. On the synthetic set, which of the three conditions (floor, margin, mutual) buys the
+lowest FNIR at FPIR 0.05, and which is vacuous, and why?
+
+Exercise: write a rule with `against` that requires `rrf` to stay within 0.02 nDCG@10 of
+the best single lane, and watch the interval column: with 60 queries it is "open" even
+when the point passes, which is the honest reading.
 
 ## Where to go next
 

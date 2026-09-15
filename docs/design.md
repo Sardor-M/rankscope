@@ -67,6 +67,22 @@ expect, and on the Wilson upper bound with `--conservative`, because that is wha
 bound actually requires. When the upper bound never reaches the target the floor is
 +inf and the report names the negative count that would change that.
 
+## Caps across groups, never inside the chosen one
+
+A per-group cap was written to stop one document flooding a list, and it does. It also
+removes the right passage whenever the right document is the flooder, which is the common
+case for long documents. So the cap and document-first ordering are report *variants*
+rather than replacements: the baseline stays in the tables, and the group-level columns
+say whether deciding the document first is safe on this data.
+
+## Mutual nearest neighbour from the lanes themselves
+
+The reverse direction of a ranking, which documents a query is a nearest neighbour of, is
+normally a second index. rankscope builds it from the lanes it was given, per document,
+over the query set in the run. That makes the condition free, and makes it meaningless on
+a handful of queries; the calibration output prints its effect at three ranks so the
+emptiness is visible rather than assumed.
+
 ## Headline intervals only, by default
 
 A bootstrap interval on every mean metric for every stratum and ranking would multiply

@@ -77,7 +77,11 @@ document absent from this list is a coverage miss, not a retrieval miss.
   "null": {"n": 60, "mean": 0.665, "std": 0.048, "floor": 0.810},
   "conformal": {"alpha": 0.1, "n": 107, "min_n": 9, "floor": 0.663},
   "operating": {"fpir_max": 0.05, "rule": "point", "floor": 0.760, "fpir": {...}, "fnir": {...}},
-  "gates": [{"name": "null", "floor": 0.810}, {"name": "conformal-0.1", "floor": 0.663}, {"name": "fpir-0.05", "floor": 0.760}]
+  "operating_margin": {"fpir_max": 0.05, "rule": "point", "margin": 0.12, "fpir": {...}, "fnir": {...}},
+  "mutual": {"1": {"far": {...}, "fnir": {...}}, "3": {...}, "5": {...}},
+  "gates": [{"name": "null", "floor": 0.810, "margin": 0.0, "mutual": 0}, {"name": "conformal-0.1", "floor": 0.663, "margin": 0.0, "mutual": 0},
+            {"name": "fpir-0.05", "floor": 0.760, "margin": 0.0, "mutual": 0}, {"name": "margin-0.05", "floor": "-inf", "margin": 0.12, "mutual": 0},
+            {"name": "mutual-1", "floor": "-inf", "margin": 0.0, "mutual": 1}]
 }
 ```
 
@@ -94,18 +98,21 @@ applies the weights (adding `convex` to the rankings), the gate target and the t
 ]}
 ```
 
-`path` is a dotted path into the report JSON; keys may contain dots. A path that lands on
+`path` is a dotted path into the report JSON; keys may contain dots. A rule may carry
+`against`, a second path, in which case `threshold` is a margin added to the second value
+(default 0): `{"path": "metrics.rrf.doc.all.hit@5", "op": ">=", "against": "metrics.dense.doc.all.hit@5"}`. A path that lands on
 a proportion object (`{"p", "k", "n", "lo", "hi"}`) is judged with its own interval; a path
 that lands on a float uses a `<name>_ci` sibling when one exists.
 
 ## Report JSON (`evaluate --out`)
 
 ```
-meta          lanes, rankings, levels, ks, window, rrf_k, weights, blind, gate_on, depths {lane: depth}, missing_from_lane {lane: count}, n {queries, positives, negatives, indexed, unjudged_in_lanes}
+meta          lanes, rankings, levels, ks, window, rrf_k, weights, blind, gate_on, resamples, rerank {on, cap, document_first}, depths {lane: depth}, missing_from_lane {lane: count}, n {queries, positives, negatives, indexed, unjudged_in_lanes}
+              rankings may include re-ranked variants named <base>+cap<N> and <base>+docfirst
 metrics       ranking -> level -> stratum -> {n, mrr, mrr_ci, hit@k, hit@k_ci, recall@k, ndcg@k, recall@K_ci, ndcg@10_ci}   (recall and ndcg at doc level only; _ci on the headline means when --resamples > 0)
 attribution   counts, not_surfaced_share, not_surfaced_by[ranking], blind_share_of_misses[ranking]
 negatives     ranking -> proportion of negatives that received any candidate
-gates         name -> {floor, margin, counts, far, fnir, accept_correct, accept_wrong, queries}
+gates         name -> {floor, margin, mutual, counts, far, fnir, accept_correct, accept_wrong, by_stratum {stratum: {counts, far, fnir}}, queries}
 sweep         [{floor, fpir, fnir}]   (with --sweep)
 queries       one record per judged query: ranks per ranking, attribution, indexed
 ```

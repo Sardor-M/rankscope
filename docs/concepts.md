@@ -177,6 +177,37 @@ with zero false accepts would make one possible (73 for 5 percent). Done on cali
 negatives that is a threshold; done on the negatives you report it is tuning. Both are
 printed so the difference stays visible.
 
+### Margin and mutual nearest neighbour
+
+The margin is the gap between the top score and the runner-up. `margin_sweep` does for
+the gap what `sweep` does for the floor, at a fixed floor, in linear time, and `calibrate`
+records an operating margin beside the operating floor. A lone candidate has an infinite
+gap and clears every margin, so a margin alone cannot drive FPIR to zero when negatives
+return a single hit.
+
+Mutual nearest neighbour reads the ranking backwards. From the lanes rankscope builds, for
+every document, the queries that retrieved it, best score first. A gate with `mutual = r`
+accepts only when the query is within the top r of that list for its own top document. It
+needs no scores to be comparable across queries and it is vacuous on a small query set,
+where every document is retrieved by few queries; `calibrate` reports FAR and FNIR at
+ranks 1, 3 and 5 so you can see whether it buys anything on yours.
+
+### Gate results per stratum
+
+Every gate reports FAR where a stratum has negatives and FNIR where it has positives, so
+a floor that is safe overall and useless on one class of query is visible.
+
+## Caps and document-first (`fusion.cap_per_group`, `document_first`)
+
+A group with many near-identical items floods the top of a fused list. `cap_per_group`
+keeps at most N hits per group in the original order. A cap applied across groups also
+removes the right item when the right group is the flooder: a long document ranks several
+of its own passages above its one relevant passage, and the cap cuts the relevant one.
+`document_first` keeps the top hit's whole group first and caps only the others. `evaluate
+--cap N --document-first` adds both as variants (`rrf+cap5`, `rrf+docfirst`) beside the
+ranking they came from, so doc-level and group-level recall show what each rule costs.
+Document-first trusts the top hit's group; when group-level hit@1 is low it cannot help.
+
 ## Paired bootstrap (`stats.paired_bootstrap`)
 
 Two systems scored on the same queries give one delta per query. Resample the queries with
@@ -197,5 +228,8 @@ the right default for a gate that can block a merge.
 
 A rule is a dotted path into the report, `>=` or `<=`, and a threshold. It passes on the
 **point** when the value clears the threshold and on the **interval** when the conservative
-end of the Wilson interval does. Write the rules file before the run. The tool cannot stop
+end of the Wilson interval does. A rule with `against` names a second path instead of a
+constant: it passes on the point when the first value clears the second plus the margin,
+and on the interval only when the two intervals do not overlap in that direction, so
+"fusion must not fall below the best single lane" survives a new baseline. Write the rules file before the run. The tool cannot stop
 you editing it afterwards; the discipline can.

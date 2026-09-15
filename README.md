@@ -71,8 +71,8 @@ receives candidates from every lane, which is why a gate exists.
 
 | Command | What it does |
 | :--- | :--- |
-| `evaluate` | Metrics per lane and per fusion, miss attribution, negatives, gates. Text, Markdown, LaTeX or JSON output, plus a per-query CSV. |
-| `calibrate` | Fits fusion weights and three abstain floors on a separate calibration set and writes `thresholds.json`. `--conservative` picks the FPIR floor on the Wilson upper bound. |
+| `evaluate` | Metrics per lane and per fusion, miss attribution, negatives, gates. Optional variants with a per-group cap or document-first ordering, and mutual-nearest-neighbour gates. Text, Markdown, LaTeX or JSON output, plus a per-query CSV. |
+| `calibrate` | Fits fusion weights (MRR, hit or nDCG objective), three abstain floors, an operating margin and a mutual gate on a separate calibration set and writes `thresholds.json`. `--conservative` picks the FPIR floor on the Wilson upper bound. |
 | `compare` | Paired bootstrap of one metric between two rankings, with a minimum effect size. |
 | `verdict` | Judges a report against rules written before the run. Exits 1 on failure, so it fits in CI. |
 | `diff` | What moved between two reports, per metric, judged on whether the intervals overlap. `--fail-on-regression` for CI. |
@@ -165,9 +165,12 @@ print(render(report, ci_k=5))
 ## Learning the internals
 
 The package is small enough to read in a sitting, and each source file holds one idea.
-[`docs/tutorial.md`](docs/tutorial.md) walks through them in thirteen lessons, each with a
-command to run, a question the output answers, and an exercise. The design decisions are
-recorded in [`docs/design.md`](docs/design.md).
+[`docs/tutorial.md`](docs/tutorial.md) walks through them in sixteen lessons, each with a
+command to run, a question the output answers, and an exercise. [`docs/workbook.html`](docs/workbook.html)
+is an interactive version: open it in a browser and every idea becomes a slider, from a
+rank with a level to a pre-registered verdict, computed by the same kernel the package
+ships. [`docs/beir.md`](docs/beir.md) runs the whole loop on a public BEIR dataset. The
+design decisions are recorded in [`docs/design.md`](docs/design.md).
 
 ## Parity in other languages
 
@@ -188,10 +191,9 @@ python -m build
 
 ## Status
 
-Version 0.3.0. The arithmetic is tested and cross-checked against the JavaScript port; the
-command-line surface may still change before 1.0. Not included yet: mutual nearest
-neighbour gates, per-group caps with document-first re-ranking, and significance tests
-other than the paired bootstrap.
+Version 0.4.0. The arithmetic is tested and cross-checked against the JavaScript port; the
+command-line surface may still change before 1.0. Not included yet: significance tests
+other than the paired bootstrap, and per-stratum fusion weights.
 
 ## Licence
 
