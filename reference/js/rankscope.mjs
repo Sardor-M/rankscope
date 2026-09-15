@@ -101,6 +101,24 @@ export function rrf(lanes, k = 60) {
     .map(([doc, score]) => ({ doc, score }));
 }
 
+export function minmax(values) {
+  if (values.length === 0) return [];
+  const lo = Math.min(...values), hi = Math.max(...values);
+  return hi === lo ? values.map(() => 1) : values.map((v) => (v - lo) / (hi - lo));
+}
+
+export function convex(lanes, weights) {
+  // lanes: [[{doc, score}, ...], ...] aligned with weights; absent docs contribute 0
+  const fused = new Map();
+  lanes.forEach((hits, i) => {
+    const norm = minmax(hits.map((h) => h.score));
+    hits.forEach((h, j) => fused.set(h.doc, (fused.get(h.doc) ?? 0) + weights[i] * norm[j]));
+  });
+  return [...fused.entries()]
+    .sort((a, b) => (b[1] !== a[1] ? b[1] - a[1] : a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    .map(([doc, score]) => ({ doc, score }));
+}
+
 export function rankOf(hits, relevant, level = "doc", groupOf = null) {
   let wanted = new Set(relevant);
   if (level === "group") wanted = new Set([...wanted].map(groupOf));

@@ -42,6 +42,10 @@ RECALL = [(5, ["a", "b", "c"], ["a", "x", "b", "y", "z", "c"]), (2, ["a"], ["x",
 NDCG = [(10, {"a": 2, "b": 1}, ["x", "a", "b"]), (3, {"a": 3}, ["a", "x", "y"]), (5, {"a": 1}, ["x", "y"]),
         (5, {"a": 1, "b": 2, "c": 3}, ["c", "b", "a"])]
 RRF = [(60, [["a", "b", "c"], ["c", "d"]]), (60, [["b"], ["a"]]), (1, [["x", "y"], ["y", "x"], ["z"]])]
+MINMAX = [[2.0, 4.0, 6.0], [3.0, 3.0], [], [0.5], [-1.0, 1.0, 0.0]]
+CONVEX = [([0.3, 0.7], [[("a", 10.0), ("b", 0.0)], [("b", 0.9), ("a", 0.1)]]),
+          ([1.0, 0.0], [[("a", 2.0), ("b", 1.0)], [("b", 5.0)]]),
+          ([0.5, 0.5], [[("a", 1.0), ("b", 1.0)], [("c", 0.2), ("a", 0.1)]])]
 HITS = [("G1", "a"), ("G2", "b"), ("G1", "c"), ("G3", "d")]
 RANK = [("doc", ["c"]), ("group", ["c"]), ("doc", ["zz"]), ("group", ["zz"]), ("doc", ["d", "b"])]
 
@@ -81,6 +85,15 @@ def compute(kind: str, args: list[str]) -> str:
     if kind == "rank":
         hits = [Hit(pair.split(":")[1]) for pair in args[1].split(",")]
         return str(rank_of(hits, args[2].split("+"), level=args[0], group_of=_group_of))
+    if kind == "minmax":
+        return _list(fusion.minmax(_parse_list(args[0])))
+    if kind == "convex":
+        weights = _parse_list(args[0])
+        lanes = {}
+        for i, lane in enumerate(args[1].split(";")):
+            lanes[f"L{i}"] = [Hit(doc, float(score)) for doc, score in (pair.split(":") for pair in lane.split(","))]
+        fused = fusion.convex(lanes, {f"L{i}": w for i, w in enumerate(weights)})
+        return ",".join(f"{hit.doc}:{_num(hit.score)}" for hit in fused)
     raise ValueError(f"unknown golden kind {kind!r}")
 
 
@@ -106,6 +119,11 @@ def build() -> str:
     hits_text = ",".join(f"{group}:{doc}" for group, doc in HITS)
     for level, relevant in RANK:
         lines.append(f"rank {level} {hits_text} {'+'.join(relevant)} -> {compute('rank', [level, hits_text, '+'.join(relevant)])}")
+    for values in MINMAX:
+        lines.append(f"minmax {_list(values)} -> {compute('minmax', [_list(values)])}")
+    for weights, lanes in CONVEX:
+        spec = ";".join(",".join(f"{doc}:{_num(score)}" for doc, score in lane) for lane in lanes)
+        lines.append(f"convex {_list(weights)} {spec} -> {compute('convex', [_list(weights), spec])}")
     return "\n".join(lines) + "\n"
 
 

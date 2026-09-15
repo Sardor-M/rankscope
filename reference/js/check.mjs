@@ -32,6 +32,12 @@ function compute(kind, args) {
       const groupOf = (doc) => (pairs.find(([, d]) => d === doc) ?? [doc])[0];
       return String(rc.rankOf(pairs.map(([, d]) => ({ doc: d })), args[2].split("+"), args[0], groupOf));
     }
+    case "minmax": { const out = rc.minmax(parseList(args[0])); return out.length ? out.map(num).join(",") : "-"; }
+    case "convex": {
+      const weights = parseList(args[0]);
+      const lanes = args[1].split(";").map((lane) => lane.split(",").map((p) => { const [doc, s] = p.split(":"); return { doc, score: Number(s) }; }));
+      return rc.convex(lanes, weights).map((h) => `${h.doc}:${num(h.score)}`).join(",");
+    }
     default: throw new Error(`unknown golden kind ${kind}`);
   }
 }

@@ -55,3 +55,11 @@ rank group G1:a,G2:b,G1:c,G3:d c -> 1
 rank doc G1:a,G2:b,G1:c,G3:d zz -> 0
 rank group G1:a,G2:b,G1:c,G3:d zz -> 0
 rank doc G1:a,G2:b,G1:c,G3:d d+b -> 2
+minmax 2,4,6 -> 0,0.5,1
+minmax 3,3 -> 1,1
+minmax - -> -
+minmax 0.5 -> 1
+minmax -1,1,0 -> 0,1,0.5
+convex 0.3,0.7 a:10,b:0;b:0.9,a:0.1 -> b:0.7,a:0.3
+convex 1,0 a:2,b:1;b:5 -> a:1,b:0
+convex 0.5,0.5 a:1,b:1;c:0.2,a:0.1 -> a:0.5,b:0.5,c:0.5
