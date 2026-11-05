@@ -113,9 +113,27 @@ def paired_bootstrap(
 
 def bootstrap_mean(values: Sequence[float], *, resamples: int = 10_000, seed: int = 0) -> tuple[float, float]:
     """Percentile interval for a mean; (0, 0) when there are no values."""
-    n = len(values)
-    if n == 0:
-        return (0.0, 0.0)
-    rng = random.Random(seed)
-    means = sorted(sum(rng.choices(values, k=n)) / n for _ in range(resamples))
-    return (means[int(0.025 * resamples)], means[min(int(0.975 * resamples), resamples - 1)])
+    return bootstrap_means([values], resamples=resamples, seed=seed)[0]
+
+
+def bootstrap_means(
+    columns: Sequence[Sequence[float]], *, resamples: int = 10_000, seed: int = 0
+) -> list[tuple[float, float]]:
+    """`bootstrap_mean` of many columns. Which positions a draw picks depends only on the column's length and the
+    seed, so columns of one length share each draw: every interval is the one it would get alone, drawn once."""
+    intervals = [(0.0, 0.0)] * len(columns)
+    by_length: dict[int, list[int]] = {}
+    for index, values in enumerate(columns):
+        if values:
+            by_length.setdefault(len(values), []).append(index)
+    for n, indices in by_length.items():
+        rng = random.Random(seed)
+        means: list[list[float]] = [[] for _ in indices]
+        for _ in range(resamples):
+            draw = rng.choices(range(n), k=n)
+            for out, index in zip(means, indices):
+                out.append(sum(map(columns[index].__getitem__, draw)) / n)
+        for out, index in zip(means, indices):
+            out.sort()
+            intervals[index] = (out[int(0.025 * resamples)], out[min(int(0.975 * resamples), resamples - 1)])
+    return intervals

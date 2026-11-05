@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from math import log2
-from typing import Mapping, Sequence
+from typing import Hashable, Mapping, Sequence
 
-from .stats import bootstrap_mean, wilson
+from .stats import bootstrap_means, wilson
 
 ALL = "all"
 DEFAULT_KS = (1, 5, 10, 20)
@@ -59,30 +59,48 @@ def summarise(
     ci_metrics: Sequence[str] | None = None,
 ) -> dict:
     """Per-stratum hit@k with Wilson intervals, MRR and the other means (bootstrap intervals when asked); plus `all`."""
-    by_stratum: dict[str, list[Mapping[str, float]]] = {ALL: []}
-    for stratum, metrics in rows:
-        by_stratum.setdefault(stratum, []).append(metrics)
-        by_stratum[ALL].append(metrics)
+    return summarise_many({ALL: rows}, ks, resamples=resamples, seed=seed, ci_metrics=ci_metrics)[ALL]
+
+
+def summarise_many(
+    tables: Mapping[Hashable, Sequence[tuple[str, Mapping[str, float]]]],
+    ks: Sequence[int] = DEFAULT_KS,
+    *,
+    resamples: int = 0,
+    seed: int = 0,
+    ci_metrics: Sequence[str] | None = None,
+) -> dict:
+    """`summarise` for several tables at once, so every bootstrap interval over the same number of queries shares
+    its draws; each table comes out exactly as `summarise` alone would give it."""
     wanted = list(ci_metrics) if ci_metrics is not None else headline_metrics(ks)
-    out: dict[str, dict] = {}
-    for stratum, items in by_stratum.items():
-        ranks = [int(m["rank"]) for m in items]
-        entry: dict = {"n": len(ranks), "mrr": mrr(ranks)}
-        for k in ks:
-            entry[f"hit@{k}"] = hit_rate(ranks, k)
-            entry[f"hit@{k}_ci"] = list(wilson(hits_at(ranks, k), len(ranks)))
-        extra = sorted({key for m in items for key in m if key != "rank"})
-        per_query: dict[str, list[float]] = {"mrr": [1.0 / r if r else 0.0 for r in ranks]}
-        for key in extra:
-            values = [float(m[key]) for m in items if key in m]
-            per_query[key] = values
-            entry[key] = sum(values) / len(values) if values else 0.0
-        if resamples > 0 and len(items) > 1:
-            for key in wanted:
-                if key in per_query:
-                    entry[f"{key}_ci"] = list(bootstrap_mean(per_query[key], resamples=resamples, seed=seed))
-        out[stratum] = entry
-    return out
+    pending: list[tuple[dict, str, list[float]]] = []
+    summaries: dict = {}
+    for name, rows in tables.items():
+        by_stratum: dict[str, list[Mapping[str, float]]] = {ALL: []}
+        for stratum, metrics in rows:
+            by_stratum.setdefault(stratum, []).append(metrics)
+            by_stratum[ALL].append(metrics)
+        out: dict[str, dict] = {}
+        for stratum, items in by_stratum.items():
+            ranks = [int(m["rank"]) for m in items]
+            entry: dict = {"n": len(ranks), "mrr": mrr(ranks)}
+            for k in ks:
+                entry[f"hit@{k}"] = hit_rate(ranks, k)
+                entry[f"hit@{k}_ci"] = list(wilson(hits_at(ranks, k), len(ranks)))
+            extra = sorted({key for m in items for key in m if key != "rank"})
+            per_query: dict[str, list[float]] = {"mrr": [1.0 / r if r else 0.0 for r in ranks]}
+            for key in extra:
+                values = [float(m[key]) for m in items if key in m]
+                per_query[key] = values
+                entry[key] = sum(values) / len(values) if values else 0.0
+            if resamples > 0 and len(items) > 1:
+                pending.extend((entry, key, per_query[key]) for key in wanted if key in per_query)
+            out[stratum] = entry
+        summaries[name] = out
+    intervals = bootstrap_means([values for _, _, values in pending], resamples=resamples, seed=seed) if pending else []
+    for (entry, key, _), interval in zip(pending, intervals):
+        entry[f"{key}_ci"] = list(interval)
+    return summaries
 
 
 def miss_attribution(*, indexed: bool, ranks: Mapping[str, int], window: int) -> str:

@@ -46,3 +46,11 @@ def test_summarise_bootstrap_intervals_on_the_mean_metrics():
     assert "mrr_ci" not in m.summarise(rows, ks=(1, 5), resamples=0)[m.ALL]
     assert "mrr_ci" not in m.summarise(rows[:1], ks=(1, 5), resamples=100)[m.ALL]
     assert m.headline_metrics((1, 5, 20)) == ["mrr", "recall@20", "ndcg@20"]
+
+
+def test_summarise_many_equals_summarise_per_table():
+    rows = [("s" if i % 3 else "t", {"rank": i % 7, "recall@20": (i % 5) / 4, "ndcg@10": (i % 4) / 3}) for i in range(40)]
+    tables = {"lexical": rows, "dense": rows[::-1], "short": rows[:9]}
+    many = m.summarise_many(tables, ks=(1, 5, 10, 20), resamples=200, seed=7)
+    assert many == {name: m.summarise(t, ks=(1, 5, 10, 20), resamples=200, seed=7) for name, t in tables.items()}
+    assert list(many["lexical"][m.ALL])[-3:] == ["mrr_ci", "recall@20_ci", "ndcg@10_ci"]

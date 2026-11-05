@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- `calibrate` normalises each query's lanes once instead of once per weight vector and
+  orders the fused list with a stable sort. On 5,000 queries over three lanes of depth 100
+  it takes 15 seconds instead of 37; the thresholds file is byte-identical.
+- `evaluate` draws each bootstrap resample once per query count and reuses it for every
+  ranking, level and metric. The draws are the ones each interval made alone, so reports
+  are byte-identical; on the same set, 3.8 seconds instead of 6.8.
+- `fit_weights` objectives score the fused doc ids, best first, rather than a list of
+  hits. New: `fusion.normalised`, `fusion.convex_order`, `stats.bootstrap_means`,
+  `metrics.summarise_many`.
+
 ## 0.4.0 (2026-09-15)
 
 - Gates can require a mutual nearest neighbour (the query within rank r among the queries

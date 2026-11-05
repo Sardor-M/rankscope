@@ -69,3 +69,18 @@ def test_paired_bootstrap():
         stats.paired_bootstrap([1.0], [1.0, 2.0])
     lo, hi = stats.bootstrap_mean([0.0, 1.0] * 20, resamples=500, seed=2)
     assert lo < 0.5 < hi
+
+
+def test_bootstrap_means_shares_draws_without_changing_any_interval():
+    def alone(values, resamples, seed):
+        # bootstrap_mean as it was before draws were shared
+        rng = random.Random(seed)
+        n = len(values)
+        means = sorted(sum(rng.choices(values, k=n)) / n for _ in range(resamples))
+        return (means[int(0.025 * resamples)], means[min(int(0.975 * resamples), resamples - 1)])
+
+    rng = random.Random(5)
+    columns = [[rng.random() for _ in range(n)] for n in (30, 30, 7, 30, 1, 7)]
+    assert stats.bootstrap_means(columns + [[]], resamples=300, seed=4) == \
+        [alone(values, 300, 4) for values in columns] + [(0.0, 0.0)]
+    assert stats.bootstrap_mean(columns[2], resamples=300, seed=4) == alone(columns[2], 300, 4)

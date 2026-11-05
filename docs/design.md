@@ -91,6 +91,23 @@ report gives intervals to MRR, recall at the deepest k and nDCG at 10, which are
 columns the tables show, with 1000 draws. `--resamples 0` skips them; `summarise` takes
 `ci_metrics` for anyone who wants more.
 
+## Bootstrap draws are shared, not reseeded
+
+Which positions a resample picks depends only on how many values there are and the seed,
+not on the values. So `bootstrap_means` draws once per length and averages every column of
+that length over the same draw, and `evaluate` hands it every ranking and level at once.
+Each interval is exactly the one a separate call with the same seed would give; the
+drawing is paid once per stratum size instead of once per column. Changing that, for
+instance to draw per column from a derived seed, would change every published interval.
+
+## The weight fit normalises once
+
+Min-max normalisation and the union of documents do not depend on the weights, so
+`fit_weights` computes them once per query and each grid point only sums and sorts.
+Documents are kept in id order and sorted by fused score with a stable sort, which is the
+same tie rule as `convex` (score descending, doc id ascending) without a tuple key; the
+test compares the whole grid table with `convex` exactly, ties included.
+
 ## Verdicts on point and on interval
 
 A rules file judged only on point estimates rewards small samples; judged only on

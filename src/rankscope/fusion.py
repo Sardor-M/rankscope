@@ -9,7 +9,7 @@ from .lanes import Hit
 
 RRF_K = 60
 
-Objective = Callable[[list[Hit]], float]
+Objective = Callable[[list[str]], float]
 
 
 def rrf(lanes: Mapping[str, Sequence[Hit]], k: int = RRF_K) -> list[Hit]:
@@ -56,18 +56,45 @@ def weight_grid(names: Sequence[str], step: float = 0.1) -> list[dict[str, float
     return grid
 
 
+def normalised(lanes: Mapping[str, Sequence[Hit]]) -> tuple[list[str], list[tuple[str, list[int], list[float]]]]:
+    """What `convex` computes before it sees weights: the documents in id order, and per lane the position of each of
+    its documents in that order with its min-max normalised score."""
+    docs = sorted({hit.doc for hits in lanes.values() for hit in hits})
+    position = {doc: i for i, doc in enumerate(docs)}
+    columns = []
+    for name, hits in lanes.items():
+        if any(hit.score is None for hit in hits):
+            raise ValueError(f"lane {name!r} has hits without scores; convex fusion needs scores")
+        columns.append((name, [position[hit.doc] for hit in hits], minmax([hit.score for hit in hits])))
+    return docs, columns
+
+
+def convex_order(docs: Sequence[str], columns: Sequence[tuple[str, list[int], list[float]]],
+                 weights: Mapping[str, float]) -> list[str]:
+    """`convex` on `normalised` input, as doc ids: the same sums in the same lane order, and ties left in id order
+    by a stable sort, so the ranking is identical."""
+    fused = [0.0] * len(docs)
+    for name, positions, values in columns:
+        weight = float(weights.get(name, 0.0))
+        for i, value in zip(positions, values):
+            fused[i] += weight * value
+    return [docs[i] for i in sorted(range(len(docs)), key=fused.__getitem__, reverse=True)]
+
+
 def fit_weights(
     per_query: Sequence[tuple[Mapping[str, Sequence[Hit]], Objective]],
     names: Sequence[str],
     step: float = 0.1,
 ) -> tuple[dict[str, float], float, list[tuple[dict[str, float], float]]]:
-    """Grid search for the weights maximising the mean objective over calibration queries."""
+    """Grid search for the weights maximising the mean objective over calibration queries. The objective scores the
+    fused doc ids, best first; each query is normalised once, not once per weight vector."""
     if not per_query:
         raise ValueError("no calibration queries to fit weights on")
+    prepared = [(normalised(lanes), score) for lanes, score in per_query]
     table: list[tuple[dict[str, float], float]] = []
     best: tuple[dict[str, float], float] | None = None
     for weights in weight_grid(names, step):
-        value = sum(score(convex(lanes, weights)) for lanes, score in per_query) / len(per_query)
+        value = sum(score(convex_order(docs, columns, weights)) for (docs, columns), score in prepared) / len(prepared)
         table.append((weights, value))
         if best is None or value > best[1] + 1e-12:
             best = (weights, value)

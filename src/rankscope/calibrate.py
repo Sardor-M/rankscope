@@ -8,7 +8,7 @@ import math
 
 from .fusion import RRF_K, fit_weights, rrf
 from .gate import Gate, evaluate as evaluate_gate, margin_sweep, operating_point, sweep
-from .lanes import Hit, Lane, slice_lanes
+from .lanes import Lane, slice_lanes
 from .measure import CONVEX, RRF, rankings_for
 from .metrics import ndcg_at
 from .ranks import GroupOf, Judgment, Qrels, rank_of
@@ -21,11 +21,12 @@ MUTUAL_RANKS = (1, 3, 5)
 def objective_for(judgment: Judgment, kind: str, window: int):
     if kind not in OBJECTIVES:
         raise ValueError(f"objective must be one of {OBJECTIVES}, not {kind!r}")
+    relevant = judgment.relevant
 
-    def score(fused: list[Hit]) -> float:
+    def score(fused: list[str]) -> float:
         if kind == "ndcg":
-            return ndcg_at([hit.doc for hit in fused], judgment.grades, window)
-        rank = rank_of(fused, judgment.relevant)
+            return ndcg_at(fused, judgment.grades, window)
+        rank = next((position for position, doc in enumerate(fused, start=1) if doc in relevant), 0)
         if kind == "mrr":
             return 1.0 / rank if rank else 0.0
         return 1.0 if 0 < rank <= window else 0.0
@@ -64,7 +65,7 @@ def calibrate(
         weights, fitted, table = fit_weights(per_query, names, step)
     else:
         weights, fitted, table = {names[0]: 1.0}, 0.0, []
-    rrf_value = sum(score(rrf(per_lane, rrf_k)) for per_lane, score in per_query) / len(per_query)
+    rrf_value = sum(score([hit.doc for hit in rrf(per_lane, rrf_k)]) for per_lane, score in per_query) / len(per_query)
 
     rankings = {
         judgment.query: rankings_for(lanes, judgment.query, fuse=(RRF, CONVEX), rrf_k=rrf_k, weights=weights).get(gate_on)

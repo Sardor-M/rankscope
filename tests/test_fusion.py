@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from rankscope import fusion as f
@@ -38,8 +40,7 @@ def test_weight_grid_and_fit():
     assert all(abs(sum(w.values()) - 1) < 1e-9 for w in grid)
 
     def score(fused):
-        rank = rank_of(fused, ["t"])
-        return 1.0 / rank if rank else 0.0
+        return 1.0 / (fused.index("t") + 1) if "t" in fused else 0.0
 
     per_query = [
         ({"good": hits("t", "a", scores=[0.9, 0.2]), "bad": hits("a", "b", "t", scores=[9.0, 8.0, 1.0])}, score),
@@ -47,6 +48,32 @@ def test_weight_grid_and_fit():
     ]
     weights, value, table = f.fit_weights(per_query, ["good", "bad"], 0.5)
     assert weights == {"good": 1.0, "bad": 0.0} and value == 1.0 and len(table) == 3
+    with pytest.raises(ValueError):
+        f.fit_weights([({"good": hits("t", "a")}, score)], ["good"], 0.5)
+
+
+def test_fit_weights_matches_convex_exactly():
+    rng = random.Random(11)
+    names = ["lexical", "dense", "sparse"]
+    per_query = []
+    for _ in range(40):
+        pool = [f"d{i}" for i in range(rng.randint(1, 30))]
+        lanes = {}
+        for name in names:
+            docs = rng.sample(pool, rng.randint(0, len(pool)))
+            # coarse scores so ties inside a lane and across fused sums are common
+            lanes[name] = hits(*docs, scores=[float(rng.randint(0, 4)) for _ in docs])
+        wanted = rng.choice(pool)
+        per_query.append((lanes, lambda fused, wanted=wanted: 1.0 / (fused.index(wanted) + 1) if wanted in fused else 0.0))
+    reference = []
+    for weights in f.weight_grid(names, 0.1):
+        value = sum(score([hit.doc for hit in f.convex(lanes, weights)]) for lanes, score in per_query) / len(per_query)
+        reference.append((weights, value))
+    assert f.fit_weights(per_query, names, 0.1)[2] == reference
+    for lanes, _ in per_query[:5]:
+        docs, columns = f.normalised(lanes)
+        assert f.convex_order(docs, columns, {"lexical": 0.3, "dense": 0.7}) == \
+            [hit.doc for hit in f.convex(lanes, {"lexical": 0.3, "dense": 0.7})]
 
 
 def test_parse_weights():

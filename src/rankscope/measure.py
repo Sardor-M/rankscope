@@ -8,7 +8,7 @@ from typing import Mapping, Sequence
 from .fusion import RRF_K, cap_per_group, convex, document_first, rrf
 from .gate import Gate, evaluate as evaluate_gate, sweep
 from .lanes import Hit, Lane, slice_lanes
-from .metrics import DEFAULT_KS, miss_attribution, ndcg_at, proportion, recall_at, summarise
+from .metrics import DEFAULT_KS, miss_attribution, ndcg_at, proportion, recall_at, summarise_many
 from .ranks import GroupOf, Judgment, Qrels, indexed, rank_of
 
 RRF = "rrf"
@@ -142,6 +142,8 @@ def evaluate(
     negatives = len(qrels.negatives())
     judged = set(qrels.by_query)
     unjudged = {query for lane in lanes.values() for query in lane.hits} - judged
+    summaries = summarise_many({(name, level): rows[name][level] for name in rows for level in levels}, ks,
+                               resamples=resamples, seed=seed)
     report: dict = {
         "meta": {
             "lanes": lane_names,
@@ -163,10 +165,7 @@ def evaluate(
                 "indexed": n_indexed, "unjudged_in_lanes": len(unjudged),
             },
         },
-        "metrics": {
-            name: {level: summarise(rows[name][level], ks, resamples=resamples, seed=seed) for level in levels}
-            for name in rows
-        },
+        "metrics": {name: {level: summaries[name, level] for level in levels} for name in rows},
         "attribution": {
             "counts": dict(attribution),
             "not_surfaced_share": proportion(attribution["not_surfaced"], n_indexed),
