@@ -5,7 +5,31 @@ on:
     tags: ["v*"]
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: tag, pyproject, __version__ and changelog agree
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          project=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          module=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/rankscope/__init__.py)
+          echo "tag $tag · pyproject $project · __version__ $module"
+          test "$tag" = "$project" || { echo "pyproject.toml says $project"; exit 1; }
+          test "$tag" = "$module" || { echo "rankscope.__version__ says $module"; exit 1; }
+          grep -q "^## $tag " CHANGELOG.md || { echo "CHANGELOG.md has no '## $tag' section"; exit 1; }
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+      - run: rankscope goldens --out /tmp/goldens.txt && node reference/js/check.mjs /tmp/goldens.txt
+
   build:
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,6 +38,11 @@ jobs:
           python-version: "3.12"
       - run: pip install build
       - run: python -m build
+      - name: the wheel installs and runs
+        run: |
+          python -m venv /tmp/wheel && /tmp/wheel/bin/pip install dist/*.whl
+          /tmp/wheel/bin/rankscope synth --out /tmp/synth
+          /tmp/wheel/bin/rankscope evaluate --lane /tmp/synth/lanes/lexical.run --lane /tmp/synth/lanes/dense.run --qrels /tmp/synth/qrels.txt --quiet
       - uses: actions/upload-artifact@v4
         with:
           name: dist

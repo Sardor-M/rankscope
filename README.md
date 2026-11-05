@@ -41,24 +41,38 @@ rankscope evaluate --lane examples/trec/lanes/bm25.run --lane examples/trec/lane
 ```
 
 ```
-q1     easy        bm25 1 · dense 1 · rrf 1 · surfaced_by_bm25+dense
-q2     easy        bm25 1 · dense MISS · rrf 3 · surfaced_by_bm25
-q3     hard        bm25 MISS · dense 1 · rrf 2 · surfaced_by_dense
-q4     hard        bm25 6 · dense MISS · rrf 6 · not_surfaced
-n1     negative    bm25 2 cands · dense 2 cands · rrf 4 cands
+q1                           easy        bm25 1 · dense 1 · rrf 1 · surfaced_by_bm25+dense
+q2                           easy        bm25 1 · dense MISS · rrf 3 · surfaced_by_bm25
+q3                           hard        bm25 MISS · dense 1 · rrf 2 · surfaced_by_dense
+q4                           hard        bm25 6 · dense MISS · rrf 6 · not_surfaced
+n1                           negative    bm25 2 cands · dense 2 cands · rrf 4 cands
+
+queries: 4 positives (4 indexed) · 1 negatives · lanes: bm25, dense · rankings: bm25, dense, rrf · window=5
+depth: bm25 6 · dense 3   (lanes differ in depth; fusion treats a document below a lane's depth as absent from it)
 
 bm25 · doc level
-  stratum  n  hit@1  hit@5  MRR    hit@5 95% CI  recall@5  ndcg@5
-  all      4  0.50   0.50   0.542  0.15-0.85     0.38      0.457
-  easy     2  1.00   1.00   1.000  0.34-1.00     0.75      0.913
-  hard     2  0.00   0.00   0.083  0.00-0.66     0.00      0.000
+  stratum  n  hit@1  hit@5  MRR                  hit@5 95% CI  recall@5          ndcg@5
+  all      4  0.50   0.50   0.542 [0.083-1.000]  0.15-0.85     0.38 [0.00-0.75]  0.457 [0.000-0.913]
+  easy     2  1.00   1.00   1.000 [1.000-1.000]  0.34-1.00     0.75 [0.50-1.00]  0.913 [0.826-1.000]
+  hard     2  0.00   0.00   0.083 [0.000-0.167]  0.00-0.66     0.00 [0.00-0.00]  0.000 [0.000-0.000]
 
 bm25 · group level
-  stratum  n  hit@1  hit@5  MRR    hit@5 95% CI
-  all      4  0.75   0.75   0.750  0.30-0.95
+  stratum  n  hit@1  hit@5  MRR                  hit@5 95% CI
+  all      4  0.75   0.75   0.750 [0.250-1.000]  0.30-0.95
+  easy     2  1.00   1.00   1.000 [1.000-1.000]  0.34-1.00
+  hard     2  0.50   0.50   0.500 [0.000-1.000]  0.09-0.91
+
+...
 
 miss attribution (doc level, window=5)
+  cause                   queries
+  surfaced_by_bm25+dense  1
+  surfaced_by_bm25        1
+  surfaced_by_dense       1
+  not_surfaced            1
+
   indexed but not surfaced by any lane: 1/4 = 25% (95% CI 5%-70%)
+  ...
   hard share of bm25 misses: 2/2 = 100% (95% CI 34%-100%)
 ```
 

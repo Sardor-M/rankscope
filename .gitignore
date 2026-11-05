@@ -12,3 +12,5 @@ node_modules/
 .vscode/
 # scratch data written by `rankscope synth` and by the examples
 /data/
+# local notes, never committed
+/docs/all/
